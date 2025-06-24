@@ -4,11 +4,23 @@ echo "🔧 Installing system dependencies and tools..."
 
 # Check if we're on macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # Check if Homebrew is installed
+    # Check if Homebrew is installed, if not install it automatically
     if ! command -v brew &> /dev/null; then
-        echo "❌ Homebrew is not installed. Please install it first:"
-        echo "   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-        exit 1
+        echo "🍺 Homebrew not found. Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        
+        # Add Homebrew to PATH for the current session
+        if [[ -f "/opt/homebrew/bin/brew" ]]; then
+            # Apple Silicon Mac
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+        elif [[ -f "/usr/local/bin/brew" ]]; then
+            # Intel Mac
+            eval "$(/usr/local/bin/brew shellenv)"
+        fi
+        
+        echo "✅ Homebrew installed successfully"
+    else
+        echo "✅ Homebrew already installed"
     fi
     
     echo "🍺 Installing macOS dependencies via Homebrew..."
@@ -138,11 +150,7 @@ check_tool "cursor" "Download from cursor.so" "Code editor (configured as \$EDIT
 # Optional tools that some plugins can utilize
 echo ""
 echo "🔧 Optional tools (will enhance plugin functionality if installed):"
-check_tool "lsd" "brew install lsd" "Modern ls replacement (note: also installed via zinit)"
-check_tool "rg" "brew install ripgrep" "Fast grep alternative (note: also installed via zinit)"
-check_tool "fd" "brew install fd" "Fast find alternative (note: also installed via zinit)"
-check_tool "lazygit" "brew install lazygit" "Git TUI (note: also installed via zinit)"
-check_tool "btm" "brew install bottom" "System monitor (note: also installed via zinit)"
+check_tool "tmux" "brew install tmux" "Terminal multiplexer"
 
 echo ""
 echo "📝 Installation Notes:"
@@ -159,4 +167,3 @@ echo "ℹ️  Next steps:"
 echo "   1. Run './setup.sh' to link dotfiles with stow"
 echo "   2. Restart your shell - zinit will automatically install plugins"
 echo "   3. Run 'zinit update --all' periodically to update plugins"
-echo "   4. Starship prompt will be managed by zinit automatically" 
