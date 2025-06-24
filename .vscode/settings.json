@@ -1,4 +1,4 @@
 {
   "editor.formatOnSave": true,
-  "conventionalCommits.scopes": ["project-setup"]
+  "conventionalCommits.scopes": ["project-setup", "mise"]
 }

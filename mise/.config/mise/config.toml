@@ -1,0 +1,5 @@
+[tools]
+java = "17"
+node = "18"
+python = "3.11"
+usage = "latest"
