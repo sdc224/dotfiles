@@ -162,6 +162,26 @@ zinit light BurntSushi/ripgrep
 # FORGIT
 zinit ice wait lucid
 zinit load wfxr/forgit
+# GIT ALIASES - Option 1: Oh-My-Zsh Git Plugin (most comprehensive)
+zinit ice wait="0a" lucid
+zinit snippet OMZP::git
+# GIT ALIASES - Option 2: Alternative standalone git aliases (uncomment if you prefer this over OMZ)
+# zinit ice wait="0a" lucid
+# zinit light unixorn/git-extra-commands
+# 
+# Additional git alias options (uncomment any you prefer):
+# 
+# Option 3: Git aliases from a GitHub gist or snippet
+# zinit ice wait="0a" lucid
+# zinit snippet 'https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh'
+# 
+# Option 4: Custom git aliases file (create your own)
+# zinit ice wait="0a" lucid
+# zinit load "$ZDOTDIR/git-aliases"  # if you create your own aliases file
+# 
+# Option 5: Git flow aliases
+# zinit ice wait="0a" lucid  
+# zinit snippet OMZP::git-flow
 # LAZYGIT
 zinit ice lucid wait="0" as="program" from="gh-r" mv="lazygit* -> lazygit" atload="alias lg='lazygit'"
 zinit light jesseduffield/lazygit
