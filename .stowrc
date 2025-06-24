@@ -1,0 +1,9 @@
+--target=~/
+--ignore=.stowrc
+--ignore=DS_Store
+--ignore=.vscode
+--ignore=README.md
+--ignore=setup.sh
+--ignore=install.sh
+--ignore=.git
+--ignore=.gitignore
