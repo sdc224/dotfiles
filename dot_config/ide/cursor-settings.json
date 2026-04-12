@@ -1,0 +1,90 @@
+{
+  "editor.formatOnSave": true,
+  "editor.quickSuggestions": {
+    "comments": "on",
+    "strings": "on",
+    "other": "on"
+  },
+  "editor.suggestSelection": "first",
+  "prettier.trailingComma": "none",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.colorTheme": "Default Dark+",
+  "workbench.activityBar.orientation": "vertical",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[java]": {
+    "editor.defaultFormatter": "redhat.java"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "files.associations": {
+    "*.jsp": "html"
+  },
+  "files.watcherExclude": {
+    "**/.bloop": true,
+    "**/.metals": true
+  },
+  "cSpell.userWords": [
+    "Chatterjee",
+    "eslintignore",
+    "Gitlab",
+    "Hashcode",
+    "middlewares",
+    "postlint",
+    "Sourodeep"
+  ],
+  "importSorter.importStringConfiguration.quoteMark": "double",
+  "importSorter.importStringConfiguration.tabType": "tab",
+  "importSorter.importStringConfiguration.maximumNumberOfImportExpressionsPerLine.count": 80,
+  "importSorter.importStringConfiguration.maximumNumberOfImportExpressionsPerLine.type": "newLineEachExpressionAfterCountLimit",
+  "java.requirements.JDK11Warning": false,
+  "java.configuration.checkProjectSettingsExclusions": false,
+  "java.semanticHighlighting.enabled": true,
+  "java.help.firstView": "gettingStarted",
+  "redhat.telemetry.enabled": false,
+  "sonarlint.rules": {
+    "java:S106": {
+      "level": "off"
+    }
+  },
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "python.languageServer": "None",
+  "terminal.integrated.profiles.osx": {
+    "zsh": { "path": "/bin/zsh", "args": ["-i", "-l"], "icon": "terminal" }
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.shellIntegration.enabled": true,
+  "terminal.integrated.fontFamily": "'MesloLGS NF', 'JetBrainsMono Nerd Font', monospace",
+  "terminal.integrated.fontSize": 13,
+  "markdown-preview-enhanced.enablePreviewZenMode": false,
+  "diffEditor.ignoreTrimWhitespace": false,
+  "json.schemaDownload.enable": true,
+  "gitlens.launchpad.indicator.enabled": false
+}

@@ -1,168 +1,112 @@
 # Dotfiles
 
-Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/).
-
-## Structure
-
-### Visual Overview
-
-```mermaid
-graph TD
-    A["🏠 dotfiles/"] --> B["📁 bash/"]
-    A --> C["📁 zsh/"] 
-    A --> D["📁 starship/"]
-    A --> E["📁 tmux/"]
-    A --> F["📁 p10k/"]
-    A --> G["📁 lazygit/"]
-    A --> H["📁 iterm/"]
-    A --> I["⚙️ install.sh"]
-    A --> J["🔧 setup.sh"]
-    
-    B --> B1[".bashrc → ~/.bashrc"]
-    B --> B2[".bash_profile → ~/.bash_profile"]
-    
-    C --> C1[".zshrc → ~/.zshrc"]
-    C --> C2[".zsh_aliases → ~/.zsh_aliases"]
-    C --> C3[".zprofile → ~/.zprofile"]
-    
-    D --> D1["📁 .config/"]
-    D1 --> D2["📁 starship/"]
-    D2 --> D3["starship.toml → ~/.config/starship/starship.toml"]
-    
-    E --> E1[".tmux.conf → ~/.tmux.conf"]
-    
-    F --> F1[".p10k.zsh → ~/.p10k.zsh"]
-    
-    G --> G1["📁 .config/"]
-    G1 --> G2["📁 lazygit/"]
-    G2 --> G3["config.yml → ~/.config/lazygit/config.yml"]
-    
-    H --> H1[".hushlogin → ~/.hushlogin"]
-    
-    classDef folderStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef fileStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:1px
-    classDef scriptStyle fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    
-    class A,B,C,D,E,F,G,H,D1,D2,G1,G2 folderStyle
-    class B1,B2,C1,C2,C3,D3,E1,F1,G3,H1 fileStyle
-    class I,J scriptStyle
-```
-
-### 📋 Traditional Tree View
-
-```text
-dotfiles/
-├── bash/           # Bash configuration files
-│   ├── .bashrc     # → ~/.bashrc
-│   └── .bash_profile # → ~/.bash_profile
-├── zsh/            # Zsh configuration files
-│   ├── .zshrc      # → ~/.zshrc
-│   ├── .zsh_aliases # → ~/.zsh_aliases
-│   └── .zprofile   # → ~/.zprofile
-├── starship/       # Starship prompt configuration
-│   └── .config/
-│       └── starship/
-│           └── starship.toml  # → ~/.config/starship/starship.toml
-├── tmux/           # Tmux configuration
-│   └── .tmux.conf  # → ~/.tmux.conf
-├── p10k/           # Powerlevel10k theme configuration
-│   └── .p10k.zsh   # → ~/.p10k.zsh
-├── lazygit/        # Lazygit configuration
-│   └── .config/
-│       └── lazygit/
-│           └── config.yml  # → ~/.config/lazygit/config.yml
-├── iterm/          # iTerm2 configuration
-│   └── .hushlogin  # → ~/.hushlogin
-├── install.sh      # Installation script
-└── setup.sh        # Setup script for stowing packages
-```
-
-## Installation
-
-### Quick Setup
-
-1. **Clone this repository**:
-
-   ```bash
-   git clone https://github.com/your-username/dotfiles.git ~/.dotfiles
-   cd ~/.dotfiles
-   ```
-
-2. **Make scripts executable**:
-
-   ```bash
-   chmod +x setup.sh install.sh
-   ```
-
-3. **Run the setup script** (handles all dependencies automatically):
-
-   ```bash
-   ./setup.sh
-   ```
-
-That's it! The setup script will:
-
-- Install Homebrew (macOS) or detect your package manager (Linux)
-- Install all required dependencies (stow, starship, tmux, lazygit, etc.)
-- Create symbolic links for all dotfiles
-- Set up additional configurations
-
-### Alternative: Manual Installation
-
-If you prefer to install dependencies separately:
-
-```bash
-# Make scripts executable
-chmod +x setup.sh install.sh
-
-# Install dependencies first
-./install.sh
-
-# Then stow the dotfiles
-stow bash zsh starship tmux p10k lazygit iterm
-```
-
-## Manual Package Management
-
-### Stowing Packages
-
-You can stow packages individually or all at once:
-
-```bash
-# Stow specific packages
-stow zsh
-stow starship
-stow tmux
-
-# Stow all packages at once
-stow bash zsh starship tmux p10k lazygit iterm
-```
-
-### Un-stowing Packages
-
-To remove symlinks:
-
-```bash
-# Un-stow specific package
-stow -D zsh
-
-# Un-stow all packages
-stow -D bash zsh starship tmux p10k lazygit iterm
-```
+Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/) and [mise](https://mise.jdx.dev/).
 
 ## What's Included
 
-- **Bash**: Basic bash configuration with profile setup
-- **Zsh**: Comprehensive zsh configuration with aliases and profile
-- **Starship**: Modern, fast shell prompt with custom configuration
-- **Tmux**: Terminal multiplexer with custom key bindings and styling
-- **Powerlevel10k**: Fast and flexible zsh theme configuration
-- **Lazygit**: Simple terminal UI for git commands with custom config
-- **iTerm2**: Basic terminal configuration (hushlogin)
+| File | Deploys to | What |
+|---|---|---|
+| `dot_zshrc` | `~/.zshrc` | Zsh config — P10K in iTerm, Starship in IDEs, zinit plugins |
+| `dot_zprofile` | `~/.zprofile` | Login shell PATH setup |
+| `dot_zsh_aliases` | `~/.zsh_aliases` | Shell aliases (eza, tmux, git, zoxide) |
+| `dot_tmux.conf` | `~/.tmux.conf` | Tmux with TPM, mouse, custom splits |
+| `dot_gitconfig` | `~/.gitconfig` | Git configuration |
+| `dot_p10k.zsh` | `~/.p10k.zsh` | Powerlevel10k theme |
+| `dot_config/starship.toml` | `~/.config/starship.toml` | Starship prompt for IDE terminals |
+| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | CLI tools + language runtimes |
+| `dot_config/atuin/config.toml` | `~/.config/atuin/config.toml` | Shell history search |
+| `dot_config/ide/keybindings.json` | `~/.config/ide/` | Shared keybindings (Cursor/VSCode/Windsurf) |
+| `dot_config/ide/cursor-settings.json` | `~/.config/ide/` | Portable Cursor settings |
 
-## Notes
+## Setup (New Machine)
 
-- All configurations are designed to work together harmoniously
-- The setup creates symbolic links, so changes to files in this repo will be reflected immediately
-- Backup your existing dotfiles before running the setup script
-- Some configurations may require additional software installations (handled by `install.sh`)
+```bash
+git clone https://github.com/schatterjee10/dotfiles.git ~/Programming/Personal/dotfiles
+cd ~/Programming/Personal/dotfiles
+chmod +x install.sh
+./install.sh
+```
+
+This will:
+1. Install Homebrew (macOS) or system packages (Linux)
+2. Install chezmoi, tmux, and Nerd Fonts
+3. Install mise and all CLI tools (ripgrep, bat, eza, fzf, lazygit, etc.)
+4. Install zinit (zsh plugin manager) and TPM (tmux plugin manager)
+5. Apply all dotfiles via chezmoi
+6. Deploy shared keybindings to all installed IDEs
+
+### After Install
+
+- **iTerm2**: Set font to `MesloLGS NF` (Preferences > Profiles > Text > Font)
+- **Tmux**: Press `Ctrl-b I` (capital I) inside tmux to install plugins
+- **Shell**: Run `exec zsh` or open a new terminal
+
+## Shell Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│  GLOBAL (all terminals)                             │
+│  brew, mise, PATH, history, aliases, starship (IDE) │
+├─────────────────────────────────────────────────────┤
+│  iTERM-ONLY                                         │
+│  tmux auto-start, P10K, zinit plugins,              │
+│  fzf/zoxide shell integration, atuin, fzf-tab       │
+├─────────────────────────────────────────────────────┤
+│  IDE TERMINALS (Cursor, VSCode, Windsurf)           │
+│  Starship prompt, fzf/zoxide, no tmux               │
+└─────────────────────────────────────────────────────┘
+```
+
+## CLI Tools (managed by mise)
+
+All tools are version-tracked in `dot_config/mise/config.toml`:
+
+| Tool | What |
+|---|---|
+| `rg` (ripgrep) | Fast grep |
+| `bat` | Cat with syntax highlighting |
+| `fd` | Fast find |
+| `eza` | Modern ls with icons |
+| `delta` | Git diff viewer |
+| `fzf` | Fuzzy finder |
+| `zoxide` | Smart cd |
+| `lazygit` | Terminal git UI |
+| `lazydocker` | Terminal Docker UI |
+| `starship` | Cross-shell prompt |
+| `atuin` | Shell history search |
+| `dust` | Disk usage viewer |
+| `duf` | Disk free viewer |
+| `gping` | Graphical ping |
+| `btm` (bottom) | System monitor |
+| `yazi` | Terminal file manager |
+| `gh` | GitHub CLI |
+
+## Tmux Keybindings
+
+Prefix: `Ctrl-b`
+
+| Shortcut | What |
+|---|---|
+| `Ctrl-b c` | New window (home dir) |
+| `Ctrl-b n` | New window (current dir) |
+| `Ctrl-b h` | Split horizontal (home) |
+| `Ctrl-b v` | Split vertical (home) |
+| `Ctrl-b -` | Split horizontal (current dir) |
+| `Ctrl-b \` | Split vertical (current dir) |
+| `Ctrl-b r` | Reload config |
+
+## Day-to-Day Usage
+
+```bash
+# Edit a dotfile (edits repo source, applies to home)
+chezmoi edit ~/.zshrc
+
+# After external tool modifies a dotfile, pull changes back
+chezmoi re-add ~/.zshrc
+
+# See what's different between repo and home
+chezmoi diff
+
+# Apply all dotfiles from repo to home
+chezmoi apply
+```

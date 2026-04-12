@@ -1,0 +1,28 @@
+[tools]
+java = "21"
+node = "18.19.0"
+python = "3.11.13"
+starship = "latest"
+usage = "latest"
+uv = "latest"
+
+# CLI tools (replaces zinit gh-r downloads and brew)
+ripgrep = "latest"
+bat = "latest"
+fd = "latest"
+eza = "latest"
+delta = "latest"
+dust = "latest"
+duf = "latest"
+fzf = "latest"
+zoxide = "latest"
+lazygit = "latest"
+lazydocker = "latest"
+gping = "latest"
+bottom = "latest"
+atuin = "latest"
+yazi = "latest"
+gh = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["node"]

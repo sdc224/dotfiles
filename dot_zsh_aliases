@@ -6,7 +6,13 @@ alias cr="cursor"
 # alias rm="gtrash put"
 # alias tar-comp="_tar_comp"
 # alias tar-decomp="_tar_decomp"
-alias ls='lsd --git --icon always --classify --group-directories-first --date date'
+if command -v eza &>/dev/null; then
+  alias ls='eza --git --icons --classify --group-directories-first'
+  alias ll='eza -la --git --icons --group-directories-first'
+  alias lt='eza --tree --level=2 --icons'
+elif command -v lsd &>/dev/null; then
+  alias ls='lsd --git --icon always --classify --group-directories-first --date date'
+fi
 # alias cat="bat"
 # alias rm='command rm -i'
 # alias diff='bd --delta'

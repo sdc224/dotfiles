@@ -1,169 +1,108 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-echo "🔧 Installing system dependencies and tools..."
+DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Check if we're on macOS
+echo "Setting up dotfiles from: $DOTFILES_DIR"
+echo ""
+
+# --- 1. Homebrew (macOS) or system packages (Linux) ---
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # Check if Homebrew is installed, if not install it automatically
-    if ! command -v brew &> /dev/null; then
-        echo "🍺 Homebrew not found. Installing Homebrew..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        
-        # Add Homebrew to PATH for the current session
-        if [[ -f "/opt/homebrew/bin/brew" ]]; then
-            # Apple Silicon Mac
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        elif [[ -f "/usr/local/bin/brew" ]]; then
-            # Intel Mac
-            eval "$(/usr/local/bin/brew shellenv)"
-        fi
-        
-        echo "✅ Homebrew installed successfully"
-    else
-        echo "✅ Homebrew already installed"
+  if ! command -v brew &>/dev/null; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [[ -f "/opt/homebrew/bin/brew" ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -f "/usr/local/bin/brew" ]]; then
+      eval "$(/usr/local/bin/brew shellenv)"
     fi
-    
-    echo "🍺 Installing macOS dependencies via Homebrew..."
-    
-    # Core tools
-    brew_packages=(
-        "stow"          # Dotfiles management
-        "git"           # Version control
-        "mise"          # Runtime management
-        "fzf"           # Fuzzy finder (required by many plugins)
-        "tmux"          # Terminal multiplexer
-    )
-    
-    for package in "${brew_packages[@]}"; do
-        if ! command -v "${package}" &> /dev/null; then
-            echo "📦 Installing ${package}..."
-            brew install "${package}"
-        else
-            echo "✅ ${package} already installed"
-        fi
-    done
-    
+  fi
+  echo "Homebrew: OK"
+
+  for pkg in chezmoi tmux git; do
+    brew list "$pkg" &>/dev/null || brew install "$pkg"
+  done
+
+  # Nerd Fonts
+  brew install --cask font-jetbrains-mono-nerd-font font-meslo-lg-nerd-font 2>/dev/null || true
+
+  # tealdeer (no arm64 binary in mise)
+  brew list tealdeer &>/dev/null 2>&1 || brew install tealdeer
+
 else
-    # Linux installation
-    echo "🐧 Installing Linux dependencies..."
-    
-    # Install stow
-    if ! command -v stow &> /dev/null; then
-        echo "📦 Installing stow..."
-        if command -v apt &> /dev/null; then
-            sudo apt update && sudo apt install -y stow git curl
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y stow git curl
-        elif command -v pacman &> /dev/null; then
-            sudo pacman -S stow git curl
-        else
-            echo "❌ Package manager not supported. Please install stow, git, and curl manually."
-            exit 1
-        fi
-    else
-        echo "✅ stow already installed"
-    fi
-    
-    # Install mise
-    if ! command -v mise &> /dev/null; then
-        echo "⚙️  Installing mise..."
-        curl https://mise.run | sh
-    else
-        echo "✅ mise already installed"
-    fi
-    
-    # Install fzf
-    if ! command -v fzf &> /dev/null; then
-        echo "🔍 Installing fzf..."
-        if command -v apt &> /dev/null; then
-            sudo apt install -y fzf
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y fzf
-        elif command -v pacman &> /dev/null; then
-            sudo pacman -S fzf
-        else
-            echo "❌ Please install fzf manually"
-        fi
-    else
-        echo "✅ fzf already installed"
-    fi
-    
-    # Install tmux
-    if ! command -v tmux &> /dev/null; then
-        echo "🖥️  Installing tmux..."
-        if command -v apt &> /dev/null; then
-            sudo apt install -y tmux
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y tmux
-        elif command -v pacman &> /dev/null; then
-            sudo pacman -S tmux
-        else
-            echo "❌ Please install tmux manually"
-        fi
-    else
-        echo "✅ tmux already installed"
-    fi
+  echo "Linux detected"
+  if command -v apt &>/dev/null; then
+    sudo apt update && sudo apt install -y git curl tmux zsh
+  elif command -v pacman &>/dev/null; then
+    sudo pacman -S --noconfirm git curl tmux zsh
+  fi
+
+  # Install chezmoi on Linux
+  if ! command -v chezmoi &>/dev/null; then
+    sh -c "$(curl -fsLS get.chezmoi.io)"
+  fi
 fi
 
-# Install zinit (zsh plugin manager)
+# --- 2. Mise (version manager + CLI tools) ---
+if ! command -v mise &>/dev/null && [[ ! -x "$HOME/.local/bin/mise" ]]; then
+  echo "Installing mise..."
+  curl https://mise.run | sh
+fi
+export PATH="$HOME/.local/bin:$PATH"
+echo "mise: $(mise --version)"
+
+# --- 3. Zinit (zsh plugin manager) ---
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
-if [ ! -d "$ZINIT_HOME" ]; then
-    echo "⚡ Installing zinit plugin manager..."
-    mkdir -p "$(dirname $ZINIT_HOME)"
-    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
-    echo "✅ Zinit installed successfully"
-else
-    echo "✅ Zinit is already installed"
+if [[ ! -d "$ZINIT_HOME" ]]; then
+  echo "Installing zinit..."
+  mkdir -p "$(dirname "$ZINIT_HOME")"
+  git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
+echo "zinit: OK"
+
+# --- 4. TPM (tmux plugin manager) ---
+if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
+  echo "Installing TPM..."
+  mkdir -p "$HOME/.tmux/plugins"
+  git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+fi
+echo "TPM: OK"
+
+# --- 5. Apply dotfiles via chezmoi ---
+echo ""
+echo "Applying dotfiles with chezmoi..."
+chezmoi init --source "$DOTFILES_DIR" --apply
+
+# --- 6. Install CLI tools via mise ---
+echo ""
+echo "Installing CLI tools via mise..."
+mise install --yes
+
+# --- 7. Deploy IDE keybindings to all VS Code-based IDEs ---
+IDE_SOURCE="$HOME/.config/ide"
+if [[ -f "$IDE_SOURCE/keybindings.json" ]]; then
+  echo ""
+  echo "Deploying IDE keybindings..."
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    IDE_DIRS=("$HOME/Library/Application Support/Cursor/User" "$HOME/Library/Application Support/Code/User" "$HOME/Library/Application Support/Windsurf/User")
+  else
+    IDE_DIRS=("$HOME/.config/Cursor/User" "$HOME/.config/Code/User" "$HOME/.config/Windsurf/User")
+  fi
+  for dir in "${IDE_DIRS[@]}"; do
+    [[ -d "$dir" ]] && cp "$IDE_SOURCE/keybindings.json" "$dir/keybindings.json" && echo "  keybindings -> $(basename "$(dirname "$dir")")"
+  done
 fi
 
-# Install mise usage tool for zsh completions
-if command -v mise &> /dev/null; then
-    echo "🔧 Setting up mise with usage tool for completions..."
-    mise use --global usage@latest 2>/dev/null || echo "⚠️  Note: Run 'mise use --global usage@latest' manually for better mise completions"
-    echo "✅ Mise usage tool setup complete"
-fi
-
-# Check for optional development tools that enhance the shell experience
+# --- Done ---
 echo ""
-echo "🔍 Checking for optional development tools..."
-
-check_tool() {
-    local tool="$1"
-    local install_cmd="$2"
-    local description="$3"
-    
-    if command -v "$tool" &> /dev/null; then
-        echo "  ✅ $tool is installed"
-    else
-        echo "  ❌ $tool is not installed - $description"
-        if [ -n "$install_cmd" ]; then
-            echo "     Install with: $install_cmd"
-        fi
-    fi
-}
-
-# Essential tools that enhance zinit plugins
-check_tool "docker" "brew install docker" "Required for lazydocker and docker-related plugins"
-check_tool "kubectl" "brew install kubectl" "Required for kubernetes-related plugins"
-check_tool "cursor" "Download from cursor.so" "Code editor (configured as \$EDITOR in .zshrc)"
-
-# Optional tools that some plugins can utilize
+echo "========================================="
+echo "  Setup complete!"
+echo "========================================="
 echo ""
-echo "🔧 Optional tools (will enhance plugin functionality if installed):"
-check_tool "tmux" "brew install tmux" "Terminal multiplexer"
-
+echo "Next steps:"
+echo "  1. Restart your shell (or: exec zsh)"
+echo "  2. In iTerm: set font to 'MesloLGS NF' (Preferences > Profiles > Text)"
+echo "  3. In tmux: press Ctrl-a + I to install plugins"
 echo ""
-echo "📝 Installation Notes:"
-echo "💡 System dependencies are now installed"
-echo "💡 Zinit is ready to manage zsh plugins automatically"
-echo "💡 Many CLI tools will be installed by zinit plugins on first shell load"
-echo "💡 First shell startup may be slower as zinit clones and builds plugins"
-echo "💡 Subsequent startups will be fast as plugins will be cached"
-
-echo ""
-echo "🎉 System installation complete!" 
-echo ""
-echo "ℹ️  Next steps:"
-echo "   1. Run './setup.sh' to link dotfiles with stow"
-echo "   2. Restart your shell - zinit will automatically install plugins"
-echo "   3. Run 'zinit update --all' periodically to update plugins"
+echo "Tools managed by mise (run 'mise ls' to see all):"
+mise ls --current 2>/dev/null | awk '{print "  " $1 " " $2}' | head -20
