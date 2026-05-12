@@ -6,6 +6,10 @@ python = "latest"
 starship = "latest"
 usage = "latest"
 uv = "latest"
+dart = "latest"
+docker-cli = "latest"
+docker-compose = "latest"
+
 
 # CLI tools
 chezmoi = "latest"
