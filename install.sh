@@ -83,12 +83,19 @@ echo "zinit: OK"
 
 # --- 5. Apply dotfiles via chezmoi ---
 echo ""
-echo "Initializing chezmoi..."
-# Ensure the source directory is linked to this repo for easy editing
-if [[ ! -d "$HOME/.local/share/chezmoi" ]]; then
-  echo "Linking dotfiles repo to chezmoi source..."
-  mkdir -p "$HOME/.local/share"
-  ln -snf "$DOTFILES_DIR" "$HOME/.local/share/chezmoi"
+echo "Linking dotfiles repo to chezmoi..."
+mkdir -p "$HOME/.local/share"
+ln -snf "$DOTFILES_DIR" "$HOME/.local/share/chezmoi"
+
+echo "Checking chezmoi identity..."
+CONFIG_FILE="$HOME/.config/chezmoi/chezmoi.toml"
+TEMPLATE_FILE="$DOTFILES_DIR/.chezmoi.toml.tmpl"
+
+# If the config is missing OR the template is newer than the config, run init
+if [[ ! -f "$CONFIG_FILE" ]] || [[ "$TEMPLATE_FILE" -nt "$CONFIG_FILE" ]]; then
+  echo "Identity setup: Initializing/Updating configuration..."
+  # This will prompt you for your name/email only when needed
+  chezmoi init
 fi
 
 echo "Applying dotfiles..."

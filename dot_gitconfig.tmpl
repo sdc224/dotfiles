@@ -1,0 +1,44 @@
+[user]
+    name = {{ .name | quote }}
+    email = {{ .email | quote }}
+
+[core]
+    editor = code --wait
+    pager = delta
+    autocrlf = input
+
+[http]
+    # Increases buffer size for large pushes over HTTPS (500MB)
+    postBuffer = 524288000
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true  # use n and N to move between diff sections
+    dark = true      # or light = true, or omit for auto-detection
+    syntax-theme = Dracula
+    line-numbers = true
+    side-by-side = true
+
+[merge]
+    conflictStyle = zdiff3
+
+[diff]
+    colorMoved = default
+
+{{ if .is_work -}}
+# --- Work Machine Settings ---
+[url "git@github.com:"]
+    insteadOf = https://github.com/
+{{- else -}}
+# --- Personal Machine Settings ---
+[credential "https://github.com"]
+    helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+    helper = !gh auth git-credential
+{{- end }}
+
+[include]
+    # Local overrides (untracked)
+    path = ~/.gitconfig_local
