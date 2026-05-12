@@ -1,112 +1,79 @@
-# Dotfiles
+# Modern Dotfiles (Fedora & macOS)
 
-Personal dotfiles managed with [chezmoi](https://www.chezmoi.io/) and [mise](https://mise.jdx.dev/).
+A superfast, modern development environment managed with [chezmoi](https://www.chezmoi.io/) and [mise](https://mise.jdx.dev/). Built for speed with **Rust-based** tools.
 
-## What's Included
+## 🚀 Key Features
+
+- **Prompt**: [Starship](https://starship.rs/) — A unified, blazing-fast prompt for all terminals.
+- **Multiplexer**: [Zellij](https://zellij.dev/) — A modern, user-friendly Rust-based workspace manager (replaces Tmux).
+- **Tool Manager**: [mise](https://mise.jdx.dev/) — Automatically manages all CLI tools and runtimes.
+- **Plugins**: [zinit](https://github.com/zdharma-continuum/zinit) — Optimized with "Turbo Mode" for near-instant shell startup.
+- **Primary Editor**: VS Code / Cursor (configured as default for all CLI operations).
+
+## 📂 Included Files
 
 | File | Deploys to | What |
 |---|---|---|
-| `dot_zshrc` | `~/.zshrc` | Zsh config — P10K in iTerm, Starship in IDEs, zinit plugins |
-| `dot_zprofile` | `~/.zprofile` | Login shell PATH setup |
-| `dot_zsh_aliases` | `~/.zsh_aliases` | Shell aliases (eza, tmux, git, zoxide) |
-| `dot_tmux.conf` | `~/.tmux.conf` | Tmux with TPM, mouse, custom splits |
-| `dot_gitconfig` | `~/.gitconfig` | Git configuration |
-| `dot_p10k.zsh` | `~/.p10k.zsh` | Powerlevel10k theme |
-| `dot_config/starship.toml` | `~/.config/starship.toml` | Starship prompt for IDE terminals |
-| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | CLI tools + language runtimes |
-| `dot_config/atuin/config.toml` | `~/.config/atuin/config.toml` | Shell history search |
+| `dot_zshrc` | `~/.zshrc` | Unified Zsh config with Starship & Zellij |
+| `dot_zsh_aliases` | `~/.zsh_aliases` | Modern Rust-tool aliases (`ag`, `cat`, `ls`, etc.) |
+| `dot_config/starship.toml` | `~/.config/starship.toml` | Global prompt configuration |
+| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | All modern CLI tools |
 | `dot_config/ide/keybindings.json` | `~/.config/ide/` | Shared keybindings (Cursor/VSCode/Windsurf) |
-| `dot_config/ide/cursor-settings.json` | `~/.config/ide/` | Portable Cursor settings |
 
-## Setup (New Machine)
+## 🛠️ Installation
 
 ```bash
-git clone https://github.com/schatterjee10/dotfiles.git ~/Programming/Personal/dotfiles
-cd ~/Programming/Personal/dotfiles
-chmod +x install.sh
+# Clone the repo
+git clone <your-repo-url> ~/Programming/dotfiles
+cd ~/Programming/dotfiles
+
+# Run the installer
 ./install.sh
 ```
 
-This will:
-1. Install Homebrew (macOS) or system packages (Linux)
-2. Install chezmoi, tmux, and Nerd Fonts
-3. Install mise and all CLI tools (ripgrep, bat, eza, fzf, lazygit, etc.)
-4. Install zinit (zsh plugin manager) and TPM (tmux plugin manager)
-5. Apply all dotfiles via chezmoi
-6. Deploy shared keybindings to all installed IDEs
+**The installer will:**
+1. Detect your OS (Fedora, Mac, etc.).
+2. Install base dependencies (`zsh`, `git`, `curl`).
+3. **Fedora**: Automate VS Code installation via official RPM repo.
+4. Install `mise`, `chezmoi`, and `zinit`.
+5. Apply all dotfiles and download modern CLI tools.
 
-### After Install
+## 🧠 What is Atuin?
 
-- **iTerm2**: Set font to `MesloLGS NF` (Preferences > Profiles > Text > Font)
-- **Tmux**: Press `Ctrl-b I` (capital I) inside tmux to install plugins
-- **Shell**: Run `exec zsh` or open a new terminal
+[Atuin](https://atuin.sh/) replaces your standard shell history with a SQLite database. 
+- **Magical Search**: Press `Up` or `Ctrl+r` to open a full-screen, searchable history UI.
+- **Smart Filters**: Search by command status, directory, or time.
+- **Rust-powered**: It's incredibly fast even with millions of history entries.
 
-## Shell Architecture
+## ⌨️ Common Shortcuts
 
-```
-┌─────────────────────────────────────────────────────┐
-│  GLOBAL (all terminals)                             │
-│  brew, mise, PATH, history, aliases, starship (IDE) │
-├─────────────────────────────────────────────────────┤
-│  iTERM-ONLY                                         │
-│  tmux auto-start, P10K, zinit plugins,              │
-│  fzf/zoxide shell integration, atuin, fzf-tab       │
-├─────────────────────────────────────────────────────┤
-│  IDE TERMINALS (Cursor, VSCode, Windsurf)           │
-│  Starship prompt, fzf/zoxide, no tmux               │
-└─────────────────────────────────────────────────────┘
-```
+### Shell Aliases
+- `ag` -> Antigravity / `cr` -> Cursor
+- `cat` -> `bat` (syntax highlighting)
+- `ls` -> `eza` (modern icons/git status)
+- `top` -> `btm` (Rust system monitor)
+- `ya` -> `yazi` (Modern terminal file manager)
+- `reload` -> Instantly restart your shell
 
-## CLI Tools (managed by mise)
+### Zellij (Workspace Manager)
+Zellij is active in all main terminals. It shows its shortcuts at the bottom of the screen!
+- `Ctrl + t` -> Tab management
+- `Ctrl + n` -> Pane management
+- `Ctrl + s` -> Search / Scroll
+- `Ctrl + q` -> Detach/Quit
 
-All tools are version-tracked in `dot_config/mise/config.toml`:
-
-| Tool | What |
-|---|---|
-| `rg` (ripgrep) | Fast grep |
-| `bat` | Cat with syntax highlighting |
-| `fd` | Fast find |
-| `eza` | Modern ls with icons |
-| `delta` | Git diff viewer |
-| `fzf` | Fuzzy finder |
-| `zoxide` | Smart cd |
-| `lazygit` | Terminal git UI |
-| `lazydocker` | Terminal Docker UI |
-| `starship` | Cross-shell prompt |
-| `atuin` | Shell history search |
-| `dust` | Disk usage viewer |
-| `duf` | Disk free viewer |
-| `gping` | Graphical ping |
-| `btm` (bottom) | System monitor |
-| `yazi` | Terminal file manager |
-| `gh` | GitHub CLI |
-
-## Tmux Keybindings
-
-Prefix: `Ctrl-b`
-
-| Shortcut | What |
-|---|---|
-| `Ctrl-b c` | New window (home dir) |
-| `Ctrl-b n` | New window (current dir) |
-| `Ctrl-b h` | Split horizontal (home) |
-| `Ctrl-b v` | Split vertical (home) |
-| `Ctrl-b -` | Split horizontal (current dir) |
-| `Ctrl-b \` | Split vertical (current dir) |
-| `Ctrl-b r` | Reload config |
-
-## Day-to-Day Usage
+## 🔄 Day-to-Day Usage
 
 ```bash
 # Edit a dotfile (edits repo source, applies to home)
 chezmoi edit ~/.zshrc
 
-# After external tool modifies a dotfile, pull changes back
-chezmoi re-add ~/.zshrc
-
-# See what's different between repo and home
-chezmoi diff
-
 # Apply all dotfiles from repo to home
 chezmoi apply
+
+# Update all CLI tools via mise
+mise upgrade
 ```
+
+### Why Chezmoi instead of Stow?
+`chezmoi` is more powerful than `stow` (which uses symlinks). It allows us to use **one** file for both Mac and Fedora by using templates. You don't need to manually symlink anything; `chezmoi apply` handles it all for you.

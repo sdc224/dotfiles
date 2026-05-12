@@ -1,33 +1,61 @@
-# ROUTE PARTICOLARI
-alias route-del-default='sudo ip r del default' 
-# COMANDI ALTERNATIVI
+# =========================================================================
+# CORE ALIASES
+# =========================================================================
 alias :q="exit"
-alias cr="cursor"
-# alias rm="gtrash put"
-# alias tar-comp="_tar_comp"
-# alias tar-decomp="_tar_decomp"
+alias reload='exec zsh'
+alias ag='antigravity'
+alias cr='cursor'
+alias cd='z'
+
+# Modern CLI Replacements (Rust-based)
 if command -v eza &>/dev/null; then
   alias ls='eza --git --icons --classify --group-directories-first'
   alias ll='eza -la --git --icons --group-directories-first'
   alias lt='eza --tree --level=2 --icons'
-elif command -v lsd &>/dev/null; then
-  alias ls='lsd --git --icon always --classify --group-directories-first --date date'
 fi
-# alias cat="bat"
-# alias rm='command rm -i'
-# alias diff='bd --delta'
-alias df='df -h'  du='du -h'      cp='cp -v'   mv='mv -v'      plast="last -20"
 
-# TMUX
-alias ta='tmux attach -t'
-alias tks='tmux kill-session -t'
-alias tl='tmux list-sessions'
-alias ts='tmux new-session -s'
-alias tx='tmux new -s λ'
-alias lambda='ta λ'
+if command -v bat &>/dev/null; then
+  alias cat='bat --paging=never'
+  alias dog='bat'
+fi
 
-# SHORTCUT
-alias gsu='~/.dot_files/extras/git-summary/git-summary'
+if command -v procs &>/dev/null; then
+  alias ps='procs'
+fi
+
+if command -v bottom &>/dev/null; then
+  alias top='btm'
+  alias htop='btm'
+fi
+
+if command -v duf &>/dev/null; then
+  alias df='duf'
+fi
+
+if command -v dust &>/dev/null; then
+  alias du='dust'
+fi
+
+# =========================================================================
+# ZELLIJ (Modern Multiplexer)
+# =========================================================================
+alias zj='zellij'
+alias za='zellij attach'
+alias zl='zellij list-sessions'
+alias zk='zellij kill-all-sessions'
+
+# =========================================================================
+# GIT SHORTCUTS
+# =========================================================================
 alias gst='git status'
 alias gm='git commit -m'
+alias gdiff='git diff'
+alias lg='lazygit'
+
+# =========================================================================
+# UTILS
+# =========================================================================
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias rm='rm -iv'
 alias zf="__zoxide_zi"
