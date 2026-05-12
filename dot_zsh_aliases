@@ -27,7 +27,6 @@ alias discord='_gui_launch discord'
 alias obsidian='_gui_launch obsidian'
 alias :q="exit"
 alias reload='exec zsh'
-alias cd='z'
 
 # Modern CLI Replacements (Rust-based)
 if command -v eza &>/dev/null; then
@@ -58,6 +57,10 @@ if command -v dust &>/dev/null; then
   alias du='dust'
 fi
 
+if command -v delta &>/dev/null; then
+  alias delta='delta --dark'
+fi
+
 # =========================================================================
 # ZELLIJ (Modern Multiplexer)
 # =========================================================================
@@ -80,7 +83,7 @@ alias lg='lazygit'
 alias cp='cp -iv'
 alias mv='mv -iv'
 alias rm='rm -iv'
-alias zf="__zoxide_zi"
+alias zf="zi"
 
 # =========================================================================
 # DOCKER & CONTAINERS
