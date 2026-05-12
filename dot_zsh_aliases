@@ -1,10 +1,32 @@
 # =========================================================================
 # CORE ALIASES
 # =========================================================================
+# =========================================================================
+# SMART GUI LAUNCHER (Silences Electron/V8 noise)
+# =========================================================================
+# Launches GUI apps silently and detaches them from the terminal.
+# Preserves output if flags (like --help or -v) are used.
+_gui_launch() {
+  local cmd="$1"
+  shift
+  if [[ "$1" == -* ]]; then
+    # CLI mode: run normally
+    command "$cmd" "$@"
+  else
+    # GUI mode: silence output and detach (background + disown)
+    # The '&!' is Zsh syntax for backgrounding and disowning immediately.
+    command "$cmd" "$@" >/dev/null 2>&1 &!
+  fi
+}
+
+alias code='_gui_launch code'
+alias ag='_gui_launch antigravity'
+alias cr='_gui_launch cursor'
+alias slack='_gui_launch slack'
+alias discord='_gui_launch discord'
+alias obsidian='_gui_launch obsidian'
 alias :q="exit"
 alias reload='exec zsh'
-alias ag='antigravity'
-alias cr='cursor'
 alias cd='z'
 
 # Modern CLI Replacements (Rust-based)
