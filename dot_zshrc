@@ -33,6 +33,12 @@ unsetopt BEEP
 
 # COLORING
 autoload colors && colors
+# Fix for terminal artifacts (OSC 11 / CSI queries)
+# Some tools like 'bat' and 'delta' query the terminal for background color.
+# Setting these variables satisfies the tools so they don't query.
+export COLORTERM=truecolor
+export COLORFGBG="15;0"
+export BAT_THEME="Dracula"
 
 # ALIASES
 if [ -f $HOME/.zsh_aliases ]; then
@@ -90,8 +96,12 @@ if [[ $- == *i* ]]; then
   fi
 
   # Shell Integration (FZF, Zoxide, Atuin)
+  if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh --cmd cd)"
+    alias z='cd'
+    alias zi='cdi'
+  fi
   command -v fzf &>/dev/null && eval "$(fzf --zsh)"
-  command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
   command -v atuin &>/dev/null && eval "$(atuin init zsh)"
 
   # Completion styles
@@ -100,7 +110,7 @@ if [[ $- == *i* ]]; then
   zstyle ':fzf-tab:*' fzf-flags --height=50% --layout=default --info=inline
   
   # Context-specific previews for fzf-tab
-  zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --icons --color=always --group-directories-first $realpath 2>/dev/null'
+  zstyle ':fzf-tab:complete:(cd|z):*' fzf-preview 'eza -1 --icons --color=always --group-directories-first $realpath 2>/dev/null'
   zstyle ':fzf-tab:complete:ls:*' fzf-preview 'eza -1 --icons --color=always $realpath 2>/dev/null'
   zstyle ':fzf-tab:complete:cat:*' fzf-preview 'bat --style=numbers --color=always --line-range :200 $realpath 2>/dev/null'
 
