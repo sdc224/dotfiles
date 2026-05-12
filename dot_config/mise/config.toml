@@ -1,12 +1,14 @@
 [tools]
-java = "21"
-node = "18.19.0"
-python = "3.11.13"
+java = "latest"
+rust = "latest"
+node = "latest"
+python = "latest"
 starship = "latest"
 usage = "latest"
 uv = "latest"
 
-# CLI tools (replaces zinit gh-r downloads and brew)
+# CLI tools
+chezmoi = "latest"
 ripgrep = "latest"
 bat = "latest"
 fd = "latest"
@@ -22,10 +24,11 @@ gping = "latest"
 bottom = "latest"
 atuin = "latest"
 yazi = "latest"
-gh = "latest"
 zellij = "latest"
-procs = "latest"
-tokei = "latest"
+"cargo:procs" = "latest"
+"cargo:tokei" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
+python.github_attestations = false
+github_attestations = false
