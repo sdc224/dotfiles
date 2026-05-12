@@ -1,5 +1,14 @@
 PLAN.md
 README.md
 install.sh
+cli_tools_guide.md
 .DS_Store
 .gitignore
+renovate.json
+.env.example
+
+# IDE-specific config files that Chezmoi should not manage
+.idea/
+.vscode/
+.cursor/
+.windsurf/
