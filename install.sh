@@ -19,7 +19,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   fi
   echo "Homebrew: OK"
 
-  for pkg in chezmoi git; do
+  for pkg in git gh; do
     brew list "$pkg" &>/dev/null || brew install "$pkg"
   done
 
@@ -33,8 +33,8 @@ else
   echo "Linux detected"
   if command -v dnf &>/dev/null; then
     sudo dnf update -y
-    sudo dnf groupinstall "Development Tools" -y
-    sudo dnf install -y git curl zsh util-linux-user
+    sudo dnf group install development-tools c-development -y
+    sudo dnf install -y git curl zsh util-linux-user gh
 
     # VS Code Installation for Fedora
     if ! command -v code &>/dev/null; then
@@ -44,15 +44,11 @@ else
       sudo dnf install -y code
     fi
   elif command -v apt &>/dev/null; then
-    sudo apt update && sudo apt install -y git curl zsh
+    sudo apt update && sudo apt install -y git curl zsh gh
   elif command -v pacman &>/dev/null; then
-    sudo pacman -S --noconfirm git curl zsh
+    sudo pacman -S --noconfirm git curl zsh github-cli
   fi
 
-  # Install chezmoi on Linux
-  if ! command -v chezmoi &>/dev/null; then
-    sh -c "$(curl -fsLS get.chezmoi.io)"
-  fi
 fi
 
 # --- 2. Mise (version manager + CLI tools) ---
@@ -61,9 +57,22 @@ if ! command -v mise &>/dev/null && [[ ! -x "$HOME/.local/bin/mise" ]]; then
   curl https://mise.run | sh
 fi
 export PATH="$HOME/.local/bin:$PATH"
+
+# --- 3. Chezmoi (via mise) ---
+if ! command -v chezmoi &>/dev/null; then
+  echo "Installing chezmoi via mise..."
+  # Use GITHUB_TOKEN if available to avoid rate limits
+  if command -v gh &>/dev/null && gh auth token &>/dev/null; then
+    GITHUB_TOKEN=$(gh auth token) mise install chezmoi
+  else
+    mise install chezmoi
+  fi
+  # Make sure chezmoi is available in the current path
+  eval "$(mise activate bash --shims)"
+fi
 echo "mise: $(mise --version)"
 
-# --- 3. Zinit (zsh plugin manager) ---
+# --- 4. Zinit (zsh plugin manager) ---
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 if [[ ! -d "$ZINIT_HOME" ]]; then
   echo "Installing zinit..."
@@ -72,12 +81,18 @@ if [[ ! -d "$ZINIT_HOME" ]]; then
 fi
 echo "zinit: OK"
 
-echo "mise: $(mise --version)"
-
 # --- 5. Apply dotfiles via chezmoi ---
 echo ""
-echo "Applying dotfiles with chezmoi..."
-chezmoi init --source "$DOTFILES_DIR" --apply
+echo "Initializing chezmoi..."
+# Ensure the source directory is linked to this repo for easy editing
+if [[ ! -d "$HOME/.local/share/chezmoi" ]]; then
+  echo "Linking dotfiles repo to chezmoi source..."
+  mkdir -p "$HOME/.local/share"
+  ln -snf "$DOTFILES_DIR" "$HOME/.local/share/chezmoi"
+fi
+
+echo "Applying dotfiles..."
+chezmoi apply
 
 # --- 6. Install CLI tools via mise ---
 echo ""
@@ -97,6 +112,13 @@ if [[ -f "$IDE_SOURCE/keybindings.json" ]]; then
   for dir in "${IDE_DIRS[@]}"; do
     [[ -d "$dir" ]] && cp "$IDE_SOURCE/keybindings.json" "$dir/keybindings.json" && echo "  keybindings -> $(basename "$(dirname "$dir")")"
   done
+fi
+
+# --- 8. Set Zsh as default shell ---
+if [[ "$SHELL" != *"/zsh" ]]; then
+  echo ""
+  echo "Changing your default shell to Zsh..."
+  sudo chsh -s "$(which zsh)" "$USER"
 fi
 
 # --- Done ---
