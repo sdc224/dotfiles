@@ -19,7 +19,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   fi
   echo "Homebrew: OK"
 
-  for pkg in chezmoi tmux git; do
+  for pkg in chezmoi git; do
     brew list "$pkg" &>/dev/null || brew install "$pkg"
   done
 
@@ -31,10 +31,22 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 else
   echo "Linux detected"
-  if command -v apt &>/dev/null; then
-    sudo apt update && sudo apt install -y git curl tmux zsh
+  if command -v dnf &>/dev/null; then
+    sudo dnf update -y
+    sudo dnf groupinstall "Development Tools" -y
+    sudo dnf install -y git curl zsh util-linux-user
+
+    # VS Code Installation for Fedora
+    if ! command -v code &>/dev/null; then
+      echo "Installing VS Code..."
+      sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+      sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+      sudo dnf install -y code
+    fi
+  elif command -v apt &>/dev/null; then
+    sudo apt update && sudo apt install -y git curl zsh
   elif command -v pacman &>/dev/null; then
-    sudo pacman -S --noconfirm git curl tmux zsh
+    sudo pacman -S --noconfirm git curl zsh
   fi
 
   # Install chezmoi on Linux
@@ -60,13 +72,7 @@ if [[ ! -d "$ZINIT_HOME" ]]; then
 fi
 echo "zinit: OK"
 
-# --- 4. TPM (tmux plugin manager) ---
-if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
-  echo "Installing TPM..."
-  mkdir -p "$HOME/.tmux/plugins"
-  git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
-fi
-echo "TPM: OK"
+echo "mise: $(mise --version)"
 
 # --- 5. Apply dotfiles via chezmoi ---
 echo ""
@@ -101,8 +107,7 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo "  1. Restart your shell (or: exec zsh)"
-echo "  2. In iTerm: set font to 'MesloLGS NF' (Preferences > Profiles > Text)"
-echo "  3. In tmux: press Ctrl-a + I to install plugins"
+echo "  2. Open a new terminal to start Zellij"
 echo ""
 echo "Tools managed by mise (run 'mise ls' to see all):"
 mise ls --current 2>/dev/null | awk '{print "  " $1 " " $2}' | head -20

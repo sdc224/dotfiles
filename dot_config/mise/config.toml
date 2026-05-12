@@ -23,6 +23,9 @@ bottom = "latest"
 atuin = "latest"
 yazi = "latest"
 gh = "latest"
+zellij = "latest"
+procs = "latest"
+tokei = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
