@@ -7,9 +7,10 @@ starship = "latest"
 usage = "latest"
 uv = "latest"
 dart = "latest"
+{{ if not .is_work -}}
 docker-cli = "latest"
 docker-compose = "latest"
-
+{{ end -}}
 
 # CLI tools
 chezmoi = "latest"
