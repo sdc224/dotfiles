@@ -79,8 +79,27 @@ else
     EDITOR_DESKTOP="org.gnome.TextEditor.desktop"
     [[ -f "/usr/share/applications/code.desktop" ]] && EDITOR_DESKTOP="code.desktop"
     
-    xdg-mime default "$EDITOR_DESKTOP" application/x-shellscript 2>/dev/null || true
-    xdg-mime default "$EDITOR_DESKTOP" text/x-shellscript 2>/dev/null || true
+    # Reset shell script handlers
+    for mime in application/x-shellscript application/x-sh text/x-shellscript text/x-sh; do
+      xdg-mime default "$EDITOR_DESKTOP" "$mime" 2>/dev/null || true
+    done
+
+    # Reset directory handler (stop Kitty from hijacking "Open in Terminal" or folder clicks)
+    # On GNOME, Nautilus is the standard file manager.
+    xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
+
+    # Completely disable the "Kitty URL Launcher" (kitty-open.desktop) from hijacking things.
+    # We do this by creating a local override that hides it and clears its mimetypes.
+    mkdir -p "$HOME/.local/share/applications"
+    cat > "$HOME/.local/share/applications/kitty-open.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=kitty URL Launcher (Disabled)
+Exec=kitty
+NoDisplay=true
+MimeType=
+EOF
+    update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
   fi
 
 fi
