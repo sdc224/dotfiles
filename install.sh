@@ -71,6 +71,18 @@ else
     fc-cache -fv "$FONT_DIR"
   fi
 
+  # Reset .sh / .zsh file associations away from Kitty so it stops showing
+  # "Waiting to run: ..." every launch. Hand them back to a real editor.
+  if command -v xdg-mime &>/dev/null; then
+    echo "Fixing file associations (Linux)..."
+    # Prefer VS Code if available, otherwise GNOME Text Editor
+    EDITOR_DESKTOP="org.gnome.TextEditor.desktop"
+    [[ -f "/usr/share/applications/code.desktop" ]] && EDITOR_DESKTOP="code.desktop"
+    
+    xdg-mime default "$EDITOR_DESKTOP" application/x-shellscript 2>/dev/null || true
+    xdg-mime default "$EDITOR_DESKTOP" text/x-shellscript 2>/dev/null || true
+  fi
+
 fi
 
 # --- 2. Mise (version manager + CLI tools) ---
