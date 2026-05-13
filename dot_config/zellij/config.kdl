@@ -1,0 +1,4 @@
+// Zellij configuration
+// Disable the Kitty keyboard protocol — prevents character doubling
+// when Zellij initializes a new PTY on macOS terminals
+support_kitty_keyboard_protocol false
