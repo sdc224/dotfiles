@@ -85,7 +85,11 @@ if [[ $- == *i* ]]; then
   ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
   if [ -d "$ZINIT_HOME" ]; then
     source "${ZINIT_HOME}/zinit.zsh"
-    
+
+    # Autosuggestion style: explicit dim color so it never looks like typed text
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#6c6c6c,italic"
+    ZSH_AUTOSUGGEST_STRATEGY=(history)   # history only, no completion suggestions
+
     # Plugins in Turbo Mode (Instant startup)
     zinit ice wait"0a" lucid; zinit light zsh-users/zsh-autosuggestions
     zinit ice wait"0b" lucid blockf; zinit light zsh-users/zsh-completions

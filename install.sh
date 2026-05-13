@@ -19,15 +19,24 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   fi
   echo "Homebrew: OK"
 
-  for pkg in git gh; do
-    brew list "$pkg" &>/dev/null || brew install "$pkg"
-  done
+  # gh is managed by mise; only ensure git and duti are present via brew
+  brew list git  &>/dev/null || brew install git
+  brew list duti &>/dev/null || brew install duti
 
   # Nerd Fonts
   brew install --cask font-jetbrains-mono-nerd-font font-meslo-lg-nerd-font 2>/dev/null || true
 
   # tealdeer (no arm64 binary in mise)
   brew list tealdeer &>/dev/null 2>&1 || brew install tealdeer
+
+  # Reset .sh / .zsh file associations away from Kitty so it stops showing
+  # "Waiting to run: ..." every launch. Hand them back to the default editor.
+  if command -v duti &>/dev/null; then
+    duti -s com.apple.TextEdit sh   all 2>/dev/null || true
+    duti -s com.apple.TextEdit zsh  all 2>/dev/null || true
+    duti -s com.apple.TextEdit bash all 2>/dev/null || true
+    echo "File associations: .sh/.zsh/.bash reset to TextEdit"
+  fi
 
 else
   echo "Linux detected"
@@ -47,6 +56,19 @@ else
     sudo apt update && sudo apt install -y git curl zsh gh
   elif command -v pacman &>/dev/null; then
     sudo pacman -S --noconfirm git curl zsh github-cli
+  fi
+
+  # Nerd Fonts (Linux) — install JetBrains Mono + Meslo to ~/.local/share/fonts
+  FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
+  if [[ ! -d "$FONT_DIR" ]]; then
+    echo "Installing Nerd Fonts..."
+    mkdir -p "$FONT_DIR"
+    for nf_font in JetBrainsMono Meslo; do
+      curl -fLo "/tmp/${nf_font}.tar.xz" \
+        "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${nf_font}.tar.xz"
+      tar -xf "/tmp/${nf_font}.tar.xz" -C "$FONT_DIR"
+    done
+    fc-cache -fv "$FONT_DIR"
   fi
 
 fi
@@ -91,20 +113,26 @@ echo "Checking chezmoi identity..."
 CONFIG_FILE="$HOME/.config/chezmoi/chezmoi.toml"
 TEMPLATE_FILE="$DOTFILES_DIR/.chezmoi.toml.tmpl"
 
-# If the config is missing OR the template is newer than the config, run init
-if [[ ! -f "$CONFIG_FILE" ]] || [[ "$TEMPLATE_FILE" -nt "$CONFIG_FILE" ]]; then
+# Run init if: config is missing, template is newer, OR the [data] section is absent
+# ([data] holds name/email and is required to render dot_gitconfig.tmpl)
+if [[ ! -f "$CONFIG_FILE" ]] || [[ "$TEMPLATE_FILE" -nt "$CONFIG_FILE" ]] || ! grep -q '^\[data\]' "$CONFIG_FILE"; then
   echo "Identity setup: Initializing/Updating configuration..."
-  # This will prompt you for your name/email only when needed
+  echo "  → You will be prompted for: Git name, email, and whether this is a Work machine."
+  echo "    (Work=true skips docker-cli/docker-compose from mise; Rancher already provides them.)"
   chezmoi init
 fi
 
 echo "Applying dotfiles..."
-chezmoi apply
+chezmoi apply --force
 
 # --- 6. Install CLI tools via mise ---
 echo ""
 echo "Installing CLI tools via mise..."
-mise install --yes
+if command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1; then
+  GITHUB_TOKEN=$(gh auth token) mise install --yes
+else
+  mise install --yes
+fi
 
 # --- 7. Deploy IDE keybindings to all VS Code-based IDEs ---
 IDE_SOURCE="$HOME/.config/ide"
@@ -136,7 +164,11 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo "  1. Restart your shell (or: exec zsh)"
-echo "  2. Open a new terminal to start Zellij"
+echo "  2. Open a new terminal — zellij will auto-start and attach to 'default' session"
+echo ""
+echo "  • Verify your gitconfig: cat ~/.gitconfig"
+echo "  • Work-specific overrides (proxy, signing key, etc.): edit ~/.gitconfig_local"
+echo "  • gh CLI: run 'gh auth login' if you need GitHub API access (PRs, issues, etc.)"
 echo ""
 echo "Tools managed by mise (run 'mise ls' to see all):"
 mise ls --current 2>/dev/null | awk '{print "  " $1 " " $2}' | head -20

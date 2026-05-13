@@ -16,7 +16,7 @@
 
 [delta]
     navigate = true  # use n and N to move between diff sections
-    dark = true      # or light = true, or omit for auto-detection
+    dark = true
     syntax-theme = Dracula
     line-numbers = true
     side-by-side = true
@@ -27,18 +27,13 @@
 [diff]
     colorMoved = default
 
-{{ if .is_work -}}
-# --- Work Machine Settings ---
-[url "git@github.com:"]
-    insteadOf = https://github.com/
-{{- else -}}
-# --- Personal Machine Settings ---
+{{ if not .is_work -}}
+# Personal machine: use gh as the Git credential helper
 [credential "https://github.com"]
     helper = !gh auth git-credential
 [credential "https://gist.github.com"]
     helper = !gh auth git-credential
-{{- end }}
-
+{{ end -}}
 [include]
-    # Local overrides (untracked)
+    # Local overrides (untracked) — use this for work-specific settings
     path = ~/.gitconfig_local

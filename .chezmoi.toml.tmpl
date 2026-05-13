@@ -1,4 +1,4 @@
 [data]
     name = {{ promptString "Enter your Git display name (e.g. Sourodeep Chatterjee)" | quote }}
     email = {{ promptString "Enter the email address for your Git commits" | quote }}
-    is_work = {{ promptBool "Is this a Work machine? (Uses SSH/Enterprise settings)" false }}
+    is_work = {{ promptBool "Is this a Work machine? (Skips docker-cli/docker-compose in mise)" false }}
