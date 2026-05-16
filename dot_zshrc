@@ -4,6 +4,7 @@
 
 # PATH & Environment
 export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:$PATH"
+export PATH="$PATH":"$HOME/.pub-cache/bin"
 export EDITOR='code --wait'
 export VISUAL='code'
 export SHELL='/bin/zsh'
