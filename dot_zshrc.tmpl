@@ -67,13 +67,10 @@ fi
 # =========================================================================
 if [[ $- == *i* ]]; then
 
-  # Zellij (Modern Multiplexer) auto-start
-  # Only auto-start in real terminals, not IDE terminals or subshells
-  if [[ -z "$ZELLIJ" && "$TERM_PROGRAM" != "vscode" && "$TERM_PROGRAM" != "Cursor" && -z "$INSIDE_EMACS" ]]; then
+  # Zellij: only auto-start in Kitty, not Cursor/Claude/VS Code/etc.
+  if [[ -z "$ZELLIJ" && "$TERM_PROGRAM" == "kitty" ]]; then
     if command -v zellij &>/dev/null; then
-      # Attach to existing session or create one called 'default'
-      # exit shell when zellij exits
-      zellij attach -c default && exit
+      exec zellij
     fi
   fi
 
@@ -136,3 +133,15 @@ if [[ $- == *i* ]]; then
   bindkey '^Z' fancy-ctrl-z
 
 fi
+
+{{ if .is_work -}}
+### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
+export PATH="$HOME/.rd/bin:$PATH"
+### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
+# ZIA-CERT-STORE-MANAGED profile.d sourcing
+if [ -d /etc/profile.d ]; then
+  for _zia_f in /etc/profile.d/*.sh; do [ -f "$_zia_f" ] && . "$_zia_f"; done
+  unset _zia_f
+fi
+# ZIA-CERT-STORE-MANAGED-END
+{{ end -}}
