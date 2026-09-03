@@ -68,7 +68,7 @@ fi
 if [[ $- == *i* ]]; then
 
   # Zellij: only auto-start in Kitty, not Cursor/Claude/VS Code/etc.
-  if [[ -z "$ZELLIJ" && "$TERM_PROGRAM" == "kitty" ]]; then
+  if [[ -z "$ZELLIJ" && -n "$KITTY_PID" ]]; then
     if command -v zellij &>/dev/null; then
       exec zellij
     fi
