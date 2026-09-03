@@ -145,3 +145,8 @@ if [ -d /etc/profile.d ]; then
 fi
 # ZIA-CERT-STORE-MANAGED-END
 {{ end -}}
+
+# Stub for VS Code/Cursor/Claude shell integration.
+# Silences 'command not found: dump_zsh_state' when their
+# shell integration script fails to fully load.
+(( ${+functions[dump_zsh_state]} )) || function dump_zsh_state() { :; }
