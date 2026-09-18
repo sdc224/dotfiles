@@ -1,5 +1,5 @@
 # =========================================================================
-# GLOBAL CONFIGS (Load in all terminals: Kitty, iTerm, VSCode, etc.)
+# GLOBAL CONFIGS (Load in all terminals: Ghostty, iTerm, VSCode, etc.)
 # =========================================================================
 
 # PATH & Environment
@@ -66,13 +66,6 @@ fi
 # INTERACTIVE SHELL CONFIGS
 # =========================================================================
 if [[ $- == *i* ]]; then
-
-  # Zellij: only auto-start in Kitty, not Cursor/Claude/VS Code/etc.
-  if [[ -z "$ZELLIJ" && -n "$KITTY_PID" ]]; then
-    if command -v zellij &>/dev/null; then
-      exec zellij
-    fi
-  fi
 
   # Starship Prompt (Fast & Universal)
   if command -v starship &>/dev/null; then
