@@ -26,10 +26,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   # Nerd Fonts
   brew install --cask font-jetbrains-mono-nerd-font font-meslo-lg-nerd-font 2>/dev/null || true
 
+  # Ghostty (native GPU terminal)
+  brew install --cask ghostty 2>/dev/null || true
+
   # tealdeer (no arm64 binary in mise)
   brew list tealdeer &>/dev/null 2>&1 || brew install tealdeer
 
-  # Reset .sh / .zsh file associations away from Kitty so it stops showing
+  # Reset .sh / .zsh file associations away from the terminal so it stops showing
   # "Waiting to run: ..." every launch. Hand them back to the default editor.
   if command -v duti &>/dev/null; then
     duti -s com.apple.TextEdit sh   all 2>/dev/null || true
@@ -71,7 +74,15 @@ else
     fc-cache -fv "$FONT_DIR"
   fi
 
-  # Reset .sh / .zsh file associations away from Kitty so it stops showing
+  # Ghostty on Linux — install via COPR (Fedora) if not already present.
+  # https://ghostty.org/docs/install/binary#fedora
+  if ! command -v ghostty &>/dev/null; then
+    if command -v dnf &>/dev/null; then
+      sudo dnf copr enable -y ghostty/ghostty 2>/dev/null && sudo dnf install -y ghostty || true
+    fi
+  fi
+
+  # Reset .sh / .zsh file associations away from the terminal so it stops showing
   # "Waiting to run: ..." every launch. Hand them back to a real editor.
   if command -v xdg-mime &>/dev/null; then
     echo "Fixing file associations (Linux)..."
@@ -84,22 +95,9 @@ else
       xdg-mime default "$EDITOR_DESKTOP" "$mime" 2>/dev/null || true
     done
 
-    # Reset directory handler (stop Kitty from hijacking "Open in Terminal" or folder clicks)
+    # Reset directory handler (stop the terminal from hijacking "Open in Terminal" or folder clicks)
     # On GNOME, Nautilus is the standard file manager.
     xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
-
-    # Completely disable the "Kitty URL Launcher" (kitty-open.desktop) from hijacking things.
-    # We do this by creating a local override that hides it and clears its mimetypes.
-    mkdir -p "$HOME/.local/share/applications"
-    cat > "$HOME/.local/share/applications/kitty-open.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=kitty URL Launcher (Disabled)
-Exec=kitty
-NoDisplay=true
-MimeType=
-EOF
-    update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
   fi
 
 fi
@@ -195,7 +193,6 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo "  1. Restart your shell (or: exec zsh)"
-echo "  2. Open a new terminal — zellij will auto-start and attach to 'default' session"
 echo ""
 echo "  • Verify your gitconfig: cat ~/.gitconfig"
 echo "  • Work-specific overrides (proxy, signing key, etc.): edit ~/.gitconfig_local"

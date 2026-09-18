@@ -4,3 +4,7 @@ if [[ -f "/opt/homebrew/bin/brew" ]]; then
 elif [[ -f "/usr/local/bin/brew" ]]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
+
+if [[ -d "/Applications/JetBrains Toolbox.app" ]] || [[ -d "$HOME/.local/share/JetBrains/Toolbox" ]]; then
+  export PATH="$PATH:/usr/local/bin"
+fi
