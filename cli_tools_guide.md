@@ -35,7 +35,6 @@ This document outlines the benefits of the modern CLI stack configured in your d
 | :--- | :--- | :--- |
 | **[lazygit](https://github.com/jesseduffield/lazygit)** | Git UI | A simple terminal UI for git commands. It makes staging specific lines, resolving conflicts, and managing branches much faster than raw CLI commands. |
 | **[lazydocker](https://github.com/jesseduffield/lazydocker)** | Docker UI | A TUI for managing docker containers, images, and volumes. You can view logs, restart containers, and prune data with single keystrokes. |
-| **[zellij](https://zellij.dev/)** | Multiplexer | A modern alternative to `tmux`. It is much easier to configure, has built-in layouts/panels, and includes a "workspace" feel with tabs and plugins. |
 | **[yazi](https://github.com/sxyazi/yazi)** | File Manager | An extremely fast terminal file manager with image previews and an asynchronous design that never blocks the UI. |
 
 ## 📈 Miscellaneous

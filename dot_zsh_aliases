@@ -62,14 +62,6 @@ if command -v delta &>/dev/null; then
 fi
 
 # =========================================================================
-# ZELLIJ (Modern Multiplexer)
-# =========================================================================
-alias zj='zellij'
-alias za='zellij attach'
-alias zl='zellij list-sessions'
-alias zk='zellij kill-all-sessions'
-
-# =========================================================================
 # GIT SHORTCUTS
 # =========================================================================
 alias gst='git status'
