@@ -5,7 +5,6 @@ A superfast, modern development environment managed with [chezmoi](https://www.c
 ## 🚀 Key Features
 
 - **Prompt**: [Starship](https://starship.rs/) — A unified, blazing-fast prompt for all terminals.
-- **Multiplexer**: [Zellij](https://zellij.dev/) — A modern, user-friendly Rust-based workspace manager (replaces Tmux).
 - **Tool Manager**: [mise](https://mise.jdx.dev/) — Automatically manages all CLI tools and runtimes.
 - **Plugins**: [zinit](https://github.com/zdharma-continuum/zinit) — Optimized with "Turbo Mode" for near-instant shell startup.
 - **Smart Launcher**: Custom GUI wrapper that silences Electron/V8 noise and detaches apps from the terminal.
@@ -15,11 +14,11 @@ A superfast, modern development environment managed with [chezmoi](https://www.c
 
 | File | Deploys to | What |
 |---|---|---|
-| `dot_zshrc` | `~/.zshrc` | Unified Zsh config with Starship & Zellij |
+| `dot_zshrc` | `~/.zshrc` | Unified Zsh config with Starship |
 | `dot_zsh_aliases` | `~/.zsh_aliases` | Modern Rust-tool aliases (`ag`, `cat`, `ls`, etc.) |
 | `dot_config/starship.toml` | `~/.config/starship.toml` | Global prompt configuration |
 | `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | All modern CLI tools |
-| `dot_config/kitty/kitty.conf` | `~/.config/kitty/kitty.conf` | Modern terminal config (infinite scrollback) |
+| `dot_config/ghostty/config` | `~/.config/ghostty/config` | Native GPU terminal config (Dracula theme) |
 | `dot_config/ide/keybindings.json` | `~/.config/ide/` | Shared keybindings (Cursor/VSCode/Windsurf) |
 
 ## 🛠️ Installation
@@ -56,13 +55,6 @@ cd ~/Programming/dotfiles
 - `top` -> `btm` (Rust system monitor)
 - `ya` -> `yazi` (Modern terminal file manager)
 - `reload` -> Instantly restart your shell
-
-### Zellij (Workspace Manager)
-Zellij is active in all main terminals. It shows its shortcuts at the bottom of the screen!
-- `Ctrl + t` -> Tab management
-- `Ctrl + n` -> Pane management
-- `Ctrl + s` -> Search / Scroll
-- `Ctrl + q` -> Detach/Quit
 
 ## 🔄 Day-to-Day Usage
 

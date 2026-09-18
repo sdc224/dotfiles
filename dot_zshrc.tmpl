@@ -1,5 +1,5 @@
 # =========================================================================
-# GLOBAL CONFIGS (Load in all terminals: Kitty, iTerm, VSCode, etc.)
+# GLOBAL CONFIGS (Load in all terminals: Ghostty, iTerm, VSCode, etc.)
 # =========================================================================
 
 # PATH & Environment
@@ -67,16 +67,6 @@ fi
 # =========================================================================
 if [[ $- == *i* ]]; then
 
-  # Zellij (Modern Multiplexer) auto-start
-  # Only auto-start in real terminals, not IDE terminals or subshells
-  if [[ -z "$ZELLIJ" && "$TERM_PROGRAM" != "vscode" && "$TERM_PROGRAM" != "Cursor" && -z "$INSIDE_EMACS" ]]; then
-    if command -v zellij &>/dev/null; then
-      # Attach to existing session or create one called 'default'
-      # exit shell when zellij exits
-      zellij attach -c default && exit
-    fi
-  fi
-
   # Starship Prompt (Fast & Universal)
   if command -v starship &>/dev/null; then
     eval "$(starship init zsh)"
@@ -136,3 +126,20 @@ if [[ $- == *i* ]]; then
   bindkey '^Z' fancy-ctrl-z
 
 fi
+
+{{ if .is_work -}}
+### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
+export PATH="$HOME/.rd/bin:$PATH"
+### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
+# ZIA-CERT-STORE-MANAGED profile.d sourcing
+if [ -d /etc/profile.d ]; then
+  for _zia_f in /etc/profile.d/*.sh; do [ -f "$_zia_f" ] && . "$_zia_f"; done
+  unset _zia_f
+fi
+# ZIA-CERT-STORE-MANAGED-END
+{{ end -}}
+
+# Stub for VS Code/Cursor/Claude shell integration.
+# Silences 'command not found: dump_zsh_state' when their
+# shell integration script fails to fully load.
+(( ${+functions[dump_zsh_state]} )) || function dump_zsh_state() { :; }
