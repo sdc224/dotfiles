@@ -21,23 +21,24 @@ A superfast, modern development environment managed with [chezmoi](https://www.c
 | `dot_config/ghostty/config` | `~/.config/ghostty/config` | Native GPU terminal config (Dracula theme) |
 | `dot_config/ide/keybindings.json` | `~/.config/ide/` | Shared keybindings (Cursor/VSCode/Windsurf) |
 
-## 🛠️ Installation
+# 🛠️ Installation
 
 ```bash
 # Clone the repo
 git clone <your-repo-url> ~/Programming/dotfiles
 cd ~/Programming/dotfiles
 
-# Run the installer
-./install.sh
+# Run the installer without changing permissions
+bash ./install.sh
 ```
 
 **The installer will:**
-1. Detect your OS (Fedora, Mac, etc.).
+1. Detect your OS (Fedora, macOS, etc.).
 2. Install base dependencies (`zsh`, `git`, `curl`).
 3. **Fedora**: Automate VS Code installation via official RPM repo.
-4. Install `mise`, `chezmoi`, and `zinit`.
-5. Apply all dotfiles and download modern CLI tools.
+4. **Fedora only**: Install Docker Engine, Docker Desktop, and Docker CLI tools separately from `mise`.
+5. Install `mise`, `chezmoi`, and `zinit`.
+6. Apply all dotfiles and download modern CLI tools.
 
 ## 🧠 What is Atuin?
 
