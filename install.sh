@@ -2,6 +2,7 @@
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
+DOCKER_INSTALLED=false
 
 echo "Setting up dotfiles from: $DOTFILES_DIR"
 echo ""
@@ -47,6 +48,40 @@ else
     sudo dnf update -y
     sudo dnf group install development-tools c-development -y
     sudo dnf install -y git curl zsh util-linux-user gh
+
+    # Docker Engine, CLI, Compose, Buildx, and Docker Desktop for Fedora
+    # Uses Docker's Fedora install flow:
+    # https://docs.docker.com/engine/install/fedora/ and
+    # https://docs.docker.com/desktop/setup/install/linux/fedora/
+    if ! command -v docker &>/dev/null || ! rpm -q docker-desktop >/dev/null 2>&1; then
+      echo "Installing Docker Engine and Docker Desktop..."
+      sudo dnf remove -y docker \
+        docker-client \
+        docker-client-latest \
+        docker-common \
+        docker-latest \
+        docker-latest-logrotate \
+        docker-logrotate \
+        docker-selinux \
+        docker-engine-selinux \
+        docker-engine || true
+      sudo curl -fsSL https://download.docker.com/linux/fedora/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
+      sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-buildx-plugin
+      if ! command -v gnome-terminal &>/dev/null; then
+        sudo dnf install -y gnome-terminal
+      fi
+      DOCKER_DESKTOP_RPM="/tmp/docker-desktop-x86_64.rpm"
+      curl -fsSL -L https://desktop.docker.com/linux/main/amd64/docker-desktop-x86_64.rpm -o "$DOCKER_DESKTOP_RPM"
+      sudo dnf install -y "$DOCKER_DESKTOP_RPM"
+      rm -f "$DOCKER_DESKTOP_RPM"
+      sudo systemctl enable --now docker
+      systemctl --user daemon-reload 2>/dev/null || true
+      systemctl --user enable --now docker-desktop 2>/dev/null || true
+      sudo groupadd docker 2>/dev/null || true
+      sudo usermod -aG docker "$USER" 2>/dev/null || true
+      DOCKER_INSTALLED=true
+      echo "Docker installation complete. You may need to log out and back in for docker group membership to take effect."
+    fi
 
     # VS Code Installation for Fedora
     if ! command -v code &>/dev/null; then
@@ -147,7 +182,6 @@ TEMPLATE_FILE="$DOTFILES_DIR/.chezmoi.toml.tmpl"
 if [[ ! -f "$CONFIG_FILE" ]] || [[ "$TEMPLATE_FILE" -nt "$CONFIG_FILE" ]] || ! grep -q '^\[data\]' "$CONFIG_FILE"; then
   echo "Identity setup: Initializing/Updating configuration..."
   echo "  → You will be prompted for: Git name, email, and whether this is a Work machine."
-  echo "    (Work=true skips docker-cli/docker-compose from mise; Rancher already provides them.)"
   chezmoi init
 fi
 
@@ -164,18 +198,30 @@ else
 fi
 
 # --- 7. Deploy IDE keybindings to all VS Code-based IDEs ---
-IDE_SOURCE="$HOME/.config/ide"
-if [[ -f "$IDE_SOURCE/keybindings.json" ]]; then
+# Prefer deploying directly from the repo source so the single install command
+# (./install.sh) fully applies the dotfiles configuration.
+IDE_SRC_REPO="$DOTFILES_DIR/dot_config/ide/keybindings.json"
+if [[ -f "$IDE_SRC_REPO" ]]; then
   echo ""
-  echo "Deploying IDE keybindings..."
+  echo "Deploying IDE keybindings from repo..."
   if [[ "$OSTYPE" == "darwin"* ]]; then
     IDE_DIRS=("$HOME/Library/Application Support/Cursor/User" "$HOME/Library/Application Support/Code/User" "$HOME/Library/Application Support/Windsurf/User")
   else
     IDE_DIRS=("$HOME/.config/Cursor/User" "$HOME/.config/Code/User" "$HOME/.config/Windsurf/User")
   fi
   for dir in "${IDE_DIRS[@]}"; do
-    [[ -d "$dir" ]] && cp "$IDE_SOURCE/keybindings.json" "$dir/keybindings.json" && echo "  keybindings -> $(basename "$(dirname "$dir")")"
+    mkdir -p "$dir"
+    if [[ -f "$dir/keybindings.json" ]]; then
+      cp "$dir/keybindings.json" "$dir/keybindings.json.backup.$(date +%Y%m%dT%H%M%S)" || true
+    fi
+    cp "$IDE_SRC_REPO" "$dir/keybindings.json" && echo "  keybindings -> $(basename "$(dirname "$dir")")"
   done
+
+  # Also call the helper installer which copies to platform-standard Code/User locations
+  if [[ -f "$DOTFILES_DIR/scripts/install_vscode_keybindings.sh" ]]; then
+    echo "Running helper installer for additional VS Code locations (via bash)..."
+    bash "$DOTFILES_DIR/scripts/install_vscode_keybindings.sh" || true
+  fi
 fi
 
 # --- 8. Set Zsh as default shell ---
@@ -200,3 +246,9 @@ echo "  • gh CLI: run 'gh auth login' if you need GitHub API access (PRs, issu
 echo ""
 echo "Tools managed by mise (run 'mise ls' to see all):"
 mise ls --current 2>/dev/null | awk '{print "  " $1 " " $2}' | head -20
+
+if [[ "$DOCKER_INSTALLED" == true ]] || command -v docker &>/dev/null; then
+  echo ""
+  echo "Docker is available. Run 'docker login' to authenticate with Docker Hub or your registry."
+  echo "If Docker Desktop is installed and the daemon is not running, use 'systemctl --user start docker-desktop' or launch Docker Desktop from your desktop environment."
+fi

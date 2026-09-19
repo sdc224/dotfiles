@@ -1,0 +1,9 @@
+{
+    "dart.sdkPath": "/home/sdc224/.local/share/mise/installs/dart/3.11.6",
+    "java.jdt.ls.java.home": "/home/sdc224/.local/share/mise/installs/java/26.0.1",
+    "java.import.gradle.java.home": "/home/sdc224/.local/share/mise/installs/java/26.0.1",
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "/home/sdc224/.local/share/mise/shims/node"
+    },
+    "python.defaultInterpreterPath": "/home/sdc224/.local/share/mise/installs/python/latest/bin/python"
+}
