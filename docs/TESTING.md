@@ -87,7 +87,7 @@ job so `unit` stays fast (~0.2s, no `pip install`).
 - **Integration**: every feature in [TEST_PLAN.md](TEST_PLAN.md) has at least
   one automated case on each OS branch that can run it; OS-specific branches
   skip with a reason locally and run in CI (`tests.yml` matrix:
-  `macos-15`, `ubuntu-latest`, `fedora:latest` container).
+  `macos-15`, `ubuntu-24.04`, `fedora:latest` container).
 
 ## Work-profile assumptions under test
 

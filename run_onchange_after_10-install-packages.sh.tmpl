@@ -99,19 +99,36 @@ case "$OS" in
     if command -v dnf &>/dev/null; then
       mapfile -t DNFS < <(echo "$PLAN" | grep '^dnf:' | cut -d: -f2- | grep -v '^$' || true)
       if [ "${#DNFS[@]}" -gt 0 ]; then
-        # Docker Engine is intentionally sourced from Docker's signed DNF
-        # repository. Use DNF's repo tooling; never pipe an installer through
-        # curl. The repository setup is skipped on machines without Docker.
-        if printf '%s\n' "${DNFS[@]}" | grep -qx 'docker-ce' &&
-          ! dnf repolist --all docker-ce-stable &>/dev/null; then
-          sudo dnf install -y dnf-plugins-core
-          sudo dnf config-manager addrepo --from-repofile \
-            https://download.docker.com/linux/fedora/docker-ce.repo
+        # Split Docker Engine out: it needs Docker's signed repo. DNF5's
+        # `dnf repolist --all <id>` still exits 0 when that repo is missing,
+        # which previously skipped addrepo and broke install — detect via
+        # enabled repolist + grep instead.
+        DOCKER_PKGS=()
+        OTHER_PKGS=()
+        for pkg in "${DNFS[@]}"; do
+          case "$pkg" in
+            docker-ce | docker-ce-cli | containerd.io | docker-buildx-plugin | docker-compose-plugin)
+              DOCKER_PKGS+=("$pkg")
+              ;;
+            *)
+              OTHER_PKGS+=("$pkg")
+              ;;
+          esac
+        done
+        if [ "${#OTHER_PKGS[@]}" -gt 0 ]; then
+          sudo dnf install -y "${OTHER_PKGS[@]}"
         fi
-        sudo dnf install -y "${DNFS[@]}"
-        if printf '%s\n' "${DNFS[@]}" | grep -qx 'docker-ce' &&
-          command -v systemctl &>/dev/null; then
-          sudo systemctl enable --now docker.service
+        if [ "${#DOCKER_PKGS[@]}" -gt 0 ]; then
+          if ! dnf -q repolist --enabled 2>/dev/null | awk '{print $1}' | grep -qx 'docker-ce-stable'; then
+            sudo dnf install -y dnf-plugins-core
+            sudo dnf config-manager addrepo --from-repofile \
+              https://download.docker.com/linux/fedora/docker-ce.repo
+            sudo rpm --import https://download.docker.com/linux/fedora/gpg
+          fi
+          sudo dnf install -y "${DOCKER_PKGS[@]}"
+          if command -v systemctl &>/dev/null; then
+            sudo systemctl enable --now docker.service
+          fi
         fi
       fi
       # Ghostty on Fedora comes from COPR (binary not in default repos).

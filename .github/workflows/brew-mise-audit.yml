@@ -12,7 +12,7 @@ jobs:
   audit-mac:
     runs-on: macos-15  # arm64 runner, matches M4 fleet
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Homebrew
         run: brew update || true
       - name: Audit generic manifests against upstream
@@ -47,10 +47,10 @@ jobs:
             - macOS OS upgrades are MDM-owned; this workflow never installs them.
 
   audit-fedora:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: fedora:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check dnf/flatpak names resolve
         run: |
           dnf check-update || true
