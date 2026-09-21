@@ -358,6 +358,7 @@ Python 3.11+ stdlib only for correctness:
 ```bash
 python3 -m unittest discover -s tests/unit          # ~0.2s
 python3 -m unittest discover -s tests/integration   # real chezmoi + stubbed package managers / mise / gh
+./tests/smoke/docker-run.sh personal                # slow: real Fedora install smoke (also weekly in CI)
 ```
 
 ### Lint / format / coverage (opt-in locally; required in CI)
@@ -383,6 +384,7 @@ coverage report --fail-under=100 --show-missing
 | `tests/lib/repo.py` | Policy in testable Python (mise bans, profile merge, drift). **100% coverage gated.** |
 | `tests/unit/` | Manifests, mise template, chezmoi gates, aliases, Ghostty, workflows, scripts |
 | `tests/integration/test_converge.py` | Render + execute converge path for work vs personal (backends stubbed) |
+| `tests/smoke/` | Real Fedora `chezmoi init --apply` + binary checks (personal + work) |
 
 Full guide: [`docs/TESTING.md`](docs/TESTING.md). Feature matrix: [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
@@ -403,6 +405,7 @@ Full guide: [`docs/TESTING.md`](docs/TESTING.md). Feature matrix: [`docs/TEST_PL
 | [`.github/workflows/tests.yml`](.github/workflows/tests.yml) | PR / push `main` | **unit**, **coverage** (100% on `tests/lib`), **lint**, **integration** across current CI hosts |
 | [`.github/workflows/manifest-lint.yml`](.github/workflows/manifest-lint.yml) | PR touching packages/mise | Fails if banned tools (`node`, `python`, `java`, `kubectl`, `gum`, `gh`, …) appear outside mise |
 | [`.github/workflows/brew-mise-audit.yml`](.github/workflows/brew-mise-audit.yml) | Weekly + manual | Upstream package / mise drift; may open an audit PR |
+| [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml) | Weekly (Thu) + manual | Real Fedora install smoke × `{personal, work}` |
 
 CI does **not** mutate your machines. Local hand-install → repo is `dotfiles-sync`’s job. Upstream bumps → weekly audit PR. As Windows lands, expect a winget-aware job beside the existing matrix — not a separate product.
 
