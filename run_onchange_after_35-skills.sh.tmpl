@@ -18,23 +18,27 @@ if [ ! -d "$SRC" ]; then
   fi
 fi
 
-# Every IDE that reads the open SKILL.md folder standard gets a symlink farm.
-# Cursor and Claude Code use <home> skill dirs; Antigravity 2.x reads the
-# current ~/.gemini/config/skills plus the legacy ~/.gemini/antigravity/skills
-# path (kept because v2 global discovery is flaky — either may win).
-# Future IDE? Add one line here, or override without editing:
+# macOS uses Cursor and Claude Code. Fedora uses Antigravity, whose global
+# discovery reads both current and legacy skill paths.
+# Other agent IDEs are opt-in.
+# To add another target without editing:
 #   SKILL_TARGETS="/path/one /path/two" chezmoi apply
 #   SKILL_TARGETS_EXTRA="$HOME/.codex/skills" chezmoi apply
 if [ -n "${SKILL_TARGETS:-}" ]; then
   # shellcheck disable=SC2206
   read -r -a TARGETS <<< "$SKILL_TARGETS"
 else
+{{ if eq .chezmoi.os "linux" -}}
   TARGETS=(
-    "$HOME/.cursor/skills"
-    "$HOME/.claude/skills"
     "$HOME/.gemini/config/skills"
     "$HOME/.gemini/antigravity/skills"
   )
+{{ else -}}
+  TARGETS=(
+    "$HOME/.cursor/skills"
+    "$HOME/.claude/skills"
+  )
+{{ end -}}
 fi
 if [ -n "${SKILL_TARGETS_EXTRA:-}" ]; then
   # shellcheck disable=SC2206

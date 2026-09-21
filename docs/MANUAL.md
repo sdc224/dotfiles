@@ -14,8 +14,9 @@ This file lists what cannot be automated and must be installed by hand.
 4. Start Rancher Desktop once so the `docker` CLI from brew has a daemon.
 5. Bootstrap the repo (answer `is_work = yes`): `sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/sdc224/dotfiles.git`
    This installs Chezmoi first; its first hook installs Homebrew if needed.
-6. Verify: `dotfiles-sync --check` should report clean; anything it flags
-   as EXTRA-BREW either belongs in `work.toml` or in [MDM.md](MDM.md).
+6. Verify: `~/.local/bin/dotfiles-sync --check` should report clean; anything
+   it flags as EXTRA-BREW either belongs in `work.toml` or in
+   [MDM.md](MDM.md).
 
 ## Personal Fedora (fully manual)
 

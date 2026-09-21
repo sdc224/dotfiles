@@ -115,6 +115,10 @@ class ZprofileTest(unittest.TestCase):
         text = read("dot_zprofile")
         self.assertIn("brew shellenv", text)
 
+    def test_dotfiles_bin_is_on_login_path(self) -> None:
+        text = read("dot_zprofile")
+        self.assertIn('export PATH="$HOME/.local/bin:$PATH"', text)
+
     def test_jetbrains_toolbox_path(self) -> None:
         text = read("dot_zprofile")
         self.assertIn("JetBrains", text)
