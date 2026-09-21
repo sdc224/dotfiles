@@ -1,0 +1,386 @@
+#!/usr/bin/env bash
+# Interactive setup check for this machine's dotfiles. Converges what is
+# safe (scheduler), asks where there is a real choice (chezmoi drift,
+# gh auth), and only reports success when the setup is actually finished.
+# Exit 0 when finished, 1 when anything required is still open.
+#
+# Usage: dotfiles-doctor   (needs a terminal for prompts; without one it
+# reports and skips the interactive steps instead of hanging)
+set -euo pipefail
+
+OS="$(uname -s)"
+REPO="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
+if [ $# -gt 0 ]; then
+  echo "usage: dotfiles-doctor" >&2
+  exit 2
+fi
+fails=0
+warns=0
+
+ok() { printf '[ok]   %s\n' "$*"; }
+warn() {
+  printf '[warn] %s\n' "$*"
+  warns=$((warns + 1))
+}
+fail() {
+  printf '[fail] %s\n' "$*"
+  fails=$((fails + 1))
+}
+fixed() { printf '[fixed] %s\n' "$*"; }
+note() { printf '%s\n' "-- $*"; }
+
+say() { printf '%s\n' "$*"; }
+
+# ask_yes_no: 0=yes, 1=no / non-interactive (never hangs without a TTY).
+ask_yes_no() {
+  [ -t 0 ] || return 1
+  local ans
+  read -r -p "$1 [Y/n] " ans || return 1
+  case "$ans" in n | N | no | NO) return 1 ;; *) return 0 ;; esac
+}
+
+# prompt_drift: echoes apply | re-add | skip (skip when non-interactive).
+prompt_drift() {
+  if [ ! -t 0 ]; then
+    echo "skip"
+    return 0
+  fi
+  local ans
+  read -r -p "[a]pply repo->home / [r]e-add home->repo / [s]kip? " ans || {
+    echo "skip"
+    return 0
+  }
+  case "$ans" in
+  a | A) echo "apply" ;;
+  r | R) echo "re-add" ;;
+  *) echo "skip" ;;
+  esac
+}
+
+fix_drift_apply() {
+  say "-- converging drift via chezmoi apply..."
+  chezmoi apply || return 1
+  [ -z "$(chezmoi status 2>/dev/null || true)" ]
+}
+
+fix_drift_record() {
+  say "-- recording home into the repo source..."
+  chezmoi re-add || return 1
+  [ -z "$(chezmoi status 2>/dev/null || true)" ]
+}
+
+# Scheduler enable is idempotent and safe, so it runs unconditionally:
+# a scheduler that is not loaded after setup is a failure, not advice.
+fix_scheduler() {
+  if [ "$OS" = "Darwin" ]; then
+    PLIST="$HOME/Library/LaunchAgents/com.dotfiles.update.plist"
+    [ -f "$PLIST" ] || return 1
+    launchctl bootout "gui/$(id -u)/$(/usr/bin/plutil -extract Label raw "$PLIST" 2>/dev/null || echo com.dotfiles.update)" 2>/dev/null || true
+    launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || return 1
+    launchctl list 2>/dev/null | grep -q com.dotfiles.update
+  else
+    systemctl --user daemon-reload 2>/dev/null || true
+    systemctl --user enable --now dotfiles-update.timer 2>/dev/null || return 1
+    systemctl --user is-enabled dotfiles-update.timer &>/dev/null
+  fi
+}
+
+say "== dotfiles-doctor: $OS (repo: $REPO) =="
+
+# 1. Profile: who does chezmoi think this machine is? Parsed from the
+# chezmoi config file directly (execute-template would error on older
+# configs that predate newer prompts like install_intellij).
+PROFILE="$(
+  python3 - <<'PY' 2>/dev/null || echo "unknown/unknown"
+import tomllib, pathlib
+p = pathlib.Path.home() / ".config" / "chezmoi" / "chezmoi.toml"
+try:
+    data = tomllib.load(open(p, "rb")).get("data", {})
+except Exception:
+    data = {}
+def b(v):
+    return "unknown" if v is None else str(bool(v)).lower()
+print(b(data.get("is_work")) + "/" + b(data.get("install_intellij")))
+PY
+)"
+say "-- profile: is_work/install_intellij = $PROFILE"
+
+# 2. chezmoi itself: installed, source present, drift resolved by choice.
+if command -v chezmoi &>/dev/null; then
+  ok "chezmoi installed ($(chezmoi --version 2>/dev/null | head -n1))"
+else
+  fail "chezmoi not on PATH"
+fi
+if [ -d "$REPO/dot_config/packages" ]; then
+  ok "source manifests present"
+else
+  fail "manifests missing under $REPO/dot_config/packages"
+fi
+if command -v chezmoi &>/dev/null; then
+  if [ -z "$(chezmoi status 2>/dev/null || true)" ]; then
+    ok "chezmoi status clean"
+  else
+    say "-- drift details:"
+    chezmoi status 2>/dev/null || true
+    choice="$(prompt_drift)"
+    case "$choice" in
+    apply)
+      if fix_drift_apply; then
+        fixed "drift converged (repo wins)"
+      else
+        warn "drift remains after apply (review chezmoi diff, then dotfiles-sync)"
+      fi
+      ;;
+    re-add)
+      if fix_drift_record; then
+        fixed "home recorded into repo source (commit + push to converge the fleet)"
+      else
+        warn "re-add failed (review chezmoi diff)"
+      fi
+      ;;
+    *)
+      warn "drift left in place (re-run on a terminal to apply or record it)"
+      ;;
+    esac
+  fi
+fi
+
+# 3. System package manager for this OS.
+if [ "$OS" = "Darwin" ]; then
+  if command -v brew &>/dev/null; then
+    ok "homebrew present"
+  else
+    fail "homebrew missing (owner: run_once_before_00-bootstrap)"
+  fi
+elif [ "$OS" = "Linux" ]; then
+  if command -v dnf &>/dev/null; then
+    ok "dnf present"
+  else
+    fail "dnf missing"
+  fi
+  if command -v flatpak &>/dev/null; then
+    ok "flatpak present"
+  else
+    warn "flatpak missing (desktop apps will not converge)"
+  fi
+fi
+
+# 4. Manifests parse and obey the mise-first rule.
+if command -v python3 &>/dev/null; then
+  if python3 - "$REPO" <<'PY' 2>/dev/null; then
+import sys, tomllib, pathlib
+repo = pathlib.Path(sys.argv[1])
+BANNED = {"node", "python", "python@3.13", "python@3.12", "python@3.11",
+          "java", "kubectl", "kubernetes-cli", "gum", "gh"}
+for f in ("shared.toml", "work.toml", "personal.toml"):
+    data = tomllib.load(open(repo / "dot_config" / "packages" / f, "rb"))
+    for section in ("brew", "dnf", "winget"):
+        names = (data.get(section, {}) or {}).get("formulae", []) + \
+                (data.get(section, {}) or {}).get("packages", [])
+        if BANNED & set(names):
+            sys.exit(1)
+PY
+    ok "manifests parse, mise-first holds"
+  else
+    fail "manifests unparseable or declare banned backends (see docs/DECISION.md)"
+  fi
+else
+  fail "python3 missing (needed to parse manifests)"
+fi
+
+# 5. mise owns the runtimes + CLIs.
+if command -v mise &>/dev/null; then
+  ok "mise installed"
+  if [ -f "$HOME/.config/mise/config.toml" ]; then
+    ok "mise config deployed"
+  else
+    fail "mise config missing at ~/.config/mise/config.toml"
+  fi
+else
+  fail "mise missing (owner: run_once_before_00-bootstrap)"
+fi
+
+# 6. Shell + terminal basics.
+if [ -f "$HOME/.zshrc" ]; then
+  ok "${HOME}/.zshrc present"
+else
+  fail "${HOME}/.zshrc missing"
+fi
+if [ -f "$HOME/.config/ghostty/config" ]; then
+  ok "ghostty config deployed"
+else
+  fail "ghostty config missing"
+fi
+if command -v starship &>/dev/null; then
+  ok "starship on PATH"
+else
+  warn "starship not on PATH (prompt falls back; mise should own it)"
+fi
+
+# 7. IDE keybindings deployed (only for editors already installed).
+for app in Code Cursor Windsurf; do
+  if [ "$OS" = "Darwin" ]; then
+    dir="$HOME/Library/Application Support/$app/User"
+  else
+    dir="$HOME/.config/$app/User"
+  fi
+  if [ -d "$dir" ]; then
+    if [ -f "$dir/keybindings.json" ]; then
+      ok "$app keybindings deployed"
+    else
+      warn "$app installed but keybindings.json missing (re-run chezmoi apply)"
+    fi
+  fi
+done
+
+# 8. Weekly scheduler: guaranteed ready on every OS. The run_once enabler
+# swallows errors, so a scheduler that is still not loaded here is a
+# failure, and doctor enables it on the spot.
+if [ "$OS" = "Darwin" ]; then
+  if launchctl list 2>/dev/null | grep -q com.dotfiles.update; then
+    ok "launchd weekly update loaded"
+  elif fix_scheduler; then
+    fixed "launchd weekly update enabled"
+  else
+    fail "launchd job could not be enabled (owner: run_once_after_40-enable-schedulers; see docs/MANUAL.md)"
+  fi
+elif command -v systemctl &>/dev/null; then
+  if systemctl --user is-enabled dotfiles-update.timer &>/dev/null; then
+    ok "systemd weekly timer enabled"
+  elif fix_scheduler; then
+    fixed "systemd weekly timer enabled"
+  else
+    fail "systemd timer could not be enabled (owner: run_once_after_40-enable-schedulers; see docs/MANUAL.md)"
+  fi
+fi
+
+# 9. Update history: status freshness plus log evaluation. The weekly run
+# writes STATUS on every invocation; the log holds the evidence. Doctor
+# judges both, so silent updater failures surface here.
+STATUS="$HOME/.local/share/dotfiles-update.status"
+LOG="$HOME/.local/share/dotfiles-update.log"
+if [ -f "$STATUS" ]; then
+  LAST="$(grep '^last_run=' "$STATUS" 2>/dev/null | cut -d= -f2- || true)"
+  DRIFT="$(grep '^drift=' "$STATUS" 2>/dev/null | cut -d= -f2- || echo unknown)"
+  if [ -z "${LAST:-}" ]; then
+    warn "update status unreadable ($STATUS)"
+  else
+    LAST_EPOCH="$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LAST" +%s 2>/dev/null || date -d "$LAST" +%s 2>/dev/null || echo 0)"
+    if [ "$LAST_EPOCH" -le 0 ]; then
+      warn "cannot parse last_run in status ($LAST)"
+    elif [ $((($(date +%s) - LAST_EPOCH) / 86400)) -gt 7 ]; then
+      warn "weekly run stale (last: $LAST)"
+    else
+      ok "weekly run fresh (last: $LAST)"
+    fi
+  fi
+  case "${DRIFT:-unknown}" in
+  clean) ok "last run reported no drift" ;;
+  drift-pr-opened) warn "last run opened a drift PR (review it on GitHub)" ;;
+  *) warn "last run reported drift=$DRIFT" ;;
+  esac
+else
+  warn "no update status yet (the now-enabled weekly run will populate it)"
+fi
+if [ -f "$LOG" ]; then
+  HITS="$(grep -aiE "drift detected|NOT opening a PR|error:|failed|Traceback" "$LOG" 2>/dev/null | grep -av "drift-pr-opened" | tail -5 || true)"
+  if [ -n "$HITS" ]; then
+    warn "update log shows problems:"
+    printf '%s\n' "$HITS" | while read -r hit; do say "    log: $hit"; done
+  else
+    ok "update log clean"
+  fi
+else
+  note "no update log yet"
+fi
+
+# 10. GitHub auth is required: without it dotfiles-sync cannot open PRs,
+# so the setup is not finished until this passes. Two accounts on one
+# host are supported (gh auth login twice, gh auth switch --user to flip
+# the machine-wide active account); git pushes follow the active one via
+# the gh credential helper.
+if command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1; then
+  active="$(gh api user --jq .login 2>/dev/null || echo unknown)"
+  ok "gh authenticated as ${active:-unknown}"
+  case "$PROFILE" in
+  true/*)
+    accounts="$(gh auth status 2>&1 | grep -c "Logged in" || true)"
+    if [ "${accounts:-0}" -lt 2 ]; then
+      note "work profile with one gh account: for personal work add it with 'gh auth login', then flip with 'gh auth switch --user <name>' (machine-wide)"
+    fi
+    ;;
+  esac
+elif ask_yes_no "gh needs auth. Run 'gh auth login' now?"; then
+  if gh auth login && command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1; then
+    fixed "gh authenticated"
+  else
+    fail "gh auth incomplete — run 'gh auth login', then re-run doctor"
+  fi
+else
+  fail "gh auth required — run 'gh auth login', then re-run doctor"
+fi
+
+# 11. Git identity (advisory only).
+if git config --global user.name &>/dev/null && git config --global user.email &>/dev/null; then
+  ok "git identity set"
+else
+  warn "git user.name/email not set globally"
+fi
+
+# 12. Agent skills + rules converge into every IDE. Advisory only (warn,
+# never fail): a missing link is repaired by the run_onchange scripts on
+# the next `chezmoi apply`. Work skills (vcode-sdlc-*, k8s-mysql) are owned
+# by the Intuit developer desktop app and are never checked here.
+if [ -d "$HOME/.config/skills" ]; then
+  for skill_dir in "$HOME"/.config/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill="$(basename "$skill_dir")"
+    for dest in "$HOME/.cursor/skills/$skill" "$HOME/.claude/skills/$skill"; do
+      if [ -L "$dest" ] || [ -e "$dest" ]; then
+        ok "skill $skill present at $dest"
+      else
+        warn "skill $skill missing at $dest (re-run chezmoi apply)"
+      fi
+    done
+    if [ -d "$HOME/.gemini" ]; then
+      for dest in "$HOME/.gemini/config/skills/$skill" "$HOME/.gemini/antigravity/skills/$skill"; do
+        if [ -L "$dest" ] || [ -e "$dest" ]; then
+          ok "skill $skill present at $dest"
+        else
+          warn "skill $skill missing at $dest (re-run chezmoi apply)"
+        fi
+      done
+    fi
+  done
+else
+  warn "no skill store at ~/.config/skills (chezmoi apply first)"
+fi
+case "$PROFILE" in
+true/*) ACTIVE_RULE="commit-pr-jira" ;;
+*) ACTIVE_RULE="personal-commits" ;;
+esac
+if [ -f "$HOME/.cursor/rules/$ACTIVE_RULE.mdc" ]; then
+  ok "rules: $ACTIVE_RULE deployed (cursor)"
+else
+  warn "rules: $ACTIVE_RULE missing in ~/.cursor/rules (re-run chezmoi apply)"
+fi
+if [ -f "$HOME/.claude/commands/$ACTIVE_RULE.md" ]; then
+  ok "rules: $ACTIVE_RULE deployed (claude command)"
+else
+  warn "rules: $ACTIVE_RULE missing in ~/.claude/commands (re-run chezmoi apply)"
+fi
+if grep -q "dotfiles-rules:start" "$HOME/.claude/CLAUDE.md" 2>/dev/null; then
+  ok "rules: global block present (CLAUDE.md)"
+else
+  warn "rules: global block missing in ~/.claude/CLAUDE.md (re-run chezmoi apply)"
+fi
+if [ -d "$HOME/.gemini" ]; then
+  if grep -q "dotfiles-rules:start" "$HOME/.gemini/GEMINI.md" 2>/dev/null; then
+    ok "rules: global block present (GEMINI.md)"
+  else
+    warn "rules: global block missing in ~/.gemini/GEMINI.md (re-run chezmoi apply)"
+  fi
+fi
+
+say "== doctor: $((fails)) failure(s), $((warns)) warning(s) =="
+[ "$fails" -eq 0 ]

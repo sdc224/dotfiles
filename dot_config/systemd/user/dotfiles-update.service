@@ -1,0 +1,7 @@
+[Unit]
+Description=Weekly dotfiles auto-update (mise + flatpak, dnf notify-only)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/dotfiles-auto-update

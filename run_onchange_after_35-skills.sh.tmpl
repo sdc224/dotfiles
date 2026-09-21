@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Symlink personal skills into every agent IDE. Re-runs when sources change.
+# chrome-osascript-debug hash: {{ include "dot_config/skills/chrome-osascript-debug/SKILL.md" | sha256sum }}
+# review-github-pr hash: {{ include "dot_config/skills/review-github-pr/SKILL.md" | sha256sum }}
+# split hash: {{ include "dot_config/skills/split/SKILL.md" | sha256sum }}
+# split script hash: {{ include "dot_config/skills/split/scripts/split_diff.py" | sha256sum }}
+set -euo pipefail
+
+# Canonical store deployed by chezmoi: dot_config/skills/* -> ~/.config/skills/*.
+SRC="$HOME/.config/skills"
+if [ ! -d "$SRC" ]; then
+  FALLBACK="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/skills"
+  if [ -d "$FALLBACK" ]; then
+    SRC="$FALLBACK"
+  else
+    echo "skills: no skill store yet (chezmoi apply first)"
+    exit 0
+  fi
+fi
+
+# Every IDE that reads the open SKILL.md folder standard gets a symlink farm.
+# Cursor and Claude Code use <home> skill dirs; Antigravity 2.x reads the
+# current ~/.gemini/config/skills plus the legacy ~/.gemini/antigravity/skills
+# path (kept because v2 global discovery is flaky — either may win).
+# Future IDE? Add one line here, or override without editing:
+#   SKILL_TARGETS="/path/one /path/two" chezmoi apply
+#   SKILL_TARGETS_EXTRA="$HOME/.codex/skills" chezmoi apply
+if [ -n "${SKILL_TARGETS:-}" ]; then
+  # shellcheck disable=SC2206
+  read -r -a TARGETS <<< "$SKILL_TARGETS"
+else
+  TARGETS=(
+    "$HOME/.cursor/skills"
+    "$HOME/.claude/skills"
+    "$HOME/.gemini/config/skills"
+    "$HOME/.gemini/antigravity/skills"
+  )
+fi
+if [ -n "${SKILL_TARGETS_EXTRA:-}" ]; then
+  # shellcheck disable=SC2206
+  read -r -a _EXTRA <<< "$SKILL_TARGETS_EXTRA"
+  TARGETS+=("${_EXTRA[@]}")
+fi
+
+# Work skills from the Intuit developer desktop app are NEVER vendored here
+# and never touched: vcode-sdlc-* dirs, the k8s-mysql symlink into
+# ~/Programming/Intuit, and everything under the plugin caches
+# (~/.claude/plugins/cache/devassist-plugins-registry/*, vcode-next/*) plus
+# Cursor-managed ~/.cursor/skills-cursor/* and ~/.cursor/plugins/cache/*.
+# This script only manages symlinks that point back at $SRC, leaving every
+# other entry (work skills, plugin-managed skills) alone.
+is_work_skill() {
+  case "$1" in
+    vcode-sdlc-*|k8s-mysql) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+link_skill() {
+  local name="$1" dest_dir="$2"
+  local target="$SRC/$name" dest="$dest_dir/$name"
+  if is_work_skill "$name"; then
+    echo "skills: skipping work skill $name"
+    return 0
+  fi
+  mkdir -p "$dest_dir"
+  if [ -L "$dest" ]; then
+    if [ "$(readlink "$dest")" = "$target" ]; then
+      echo "skills: $name already linked -> $dest_dir"
+      return 0
+    fi
+    # Stale symlink (e.g. previous source path): repoint it.
+    ln -sfn "$target" "$dest"
+    echo "skills: $name repointed -> $dest_dir"
+  elif [ -e "$dest" ]; then
+    # Real dir/file the user created (first converge over existing
+    # skills): keep a timestamped backup, then link.
+    mv "$dest" "$dest.backup.$(date +%Y%m%dT%H%M%S)"
+    ln -s "$target" "$dest"
+    echo "skills: $name backed up + linked -> $dest_dir"
+  else
+    ln -s "$target" "$dest"
+    echo "skills: $name linked -> $dest_dir"
+  fi
+}
+
+prune_stale() {
+  local dest_dir="$1"
+  [ -d "$dest_dir" ] || return 0
+  for dest in "$dest_dir"/*; do
+    [ -L "$dest" ] || continue
+    case "$(readlink "$dest")" in
+      "$SRC"/*) ;;
+      *) continue ;;  # work symlink (e.g. k8s-mysql -> ~/Programming/Intuit): keep
+    esac
+    local name
+    name="$(basename "$dest")"
+    if [ ! -e "$SRC/$name" ]; then
+      rm "$dest"
+      echo "skills: pruned stale $name from $dest_dir"
+    fi
+  done
+}
+
+for skill_dir in "$SRC"/*/; do
+  [ -d "$skill_dir" ] || continue
+  name="$(basename "$skill_dir")"
+  [ -f "$skill_dir/SKILL.md" ] || { echo "skills: skipping $name (no SKILL.md)"; continue; }
+  for target in "${TARGETS[@]}"; do
+    link_skill "$name" "$target"
+  done
+done
+
+for target in "${TARGETS[@]}"; do
+  prune_stale "$target"
+done

@@ -1,0 +1,31 @@
+---
+description: Conventional commits and PR style (personal)
+alwaysApply: true
+---
+
+# Commits and PRs (personal)
+
+Apply these whenever creating commits or pull requests unless the user overrides them.
+
+## Commits
+
+- Conventional Commits: `type(scope): subject`
+- Include an emoji in the **title** after the colon
+- **Scope is lowercase only** (package or area name)
+- No Jira key — personal work has no Jira project
+- Title (first line) **must be ≤ 70 characters**
+- Body is optional; keep it to why, not a file list
+
+Examples:
+
+```
+fix(editor): 🔧 restore keybindings on Fedora
+feat(cli): ✨ add json output flag
+```
+
+Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`.
+
+## Pull requests
+
+- PR **title must match the commit title**, including the emoji
+- Body: short Summary + Test plan

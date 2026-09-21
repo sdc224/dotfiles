@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# Local watcher: reports drift between THIS machine and the dotfiles repo,
+# and opens a PR when you installed something by hand.
+# Usage: dotfiles-sync [--check]   (--check = report only, no PR)
+set -euo pipefail
+
+MODE="${1:-}"
+REPO="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
+OS="$(uname -s)"
+drift=0
+
+say() { printf '%s\n' "$*"; }
+
+say "== dotfiles-sync: $OS (repo: $REPO) =="
+
+# 1. chezmoi-managed files drift.
+if command -v chezmoi &>/dev/null; then
+  if [ -n "$(chezmoi status 2>/dev/null || true)" ]; then
+    say "-- chezmoi status: local files differ from repo:"
+    chezmoi status || true
+    drift=1
+  else
+    say "-- chezmoi: clean"
+  fi
+fi
+
+# 2. brew extras not in manifests (macOS).
+if [ "$OS" = "Darwin" ] && command -v brew &>/dev/null; then
+  # List top-level leaves vs declared brew/cask names.
+  BREW_REPORT="$(
+    python3 - "$REPO" <<'PY'
+import subprocess, sys, tomllib, pathlib
+repo = pathlib.Path(sys.argv[1])
+declared = set()
+for f in ("shared.toml", "work.toml", "personal.toml"):
+    p = repo / "dot_config" / "packages" / f
+    if not p.exists():
+        continue
+    d = tomllib.load(open(p, "rb"))
+    declared.update((d.get("brew", {}) or {}).get("formulae", []))
+    declared.update((d.get("cask", {}) or {}).get("casks", []))
+try:
+    leaves = set(subprocess.run(["brew", "list", "--formula"], capture_output=True, text=True).stdout.split())
+    casks = set(subprocess.run(["brew", "list", "--cask"], capture_output=True, text=True).stdout.split())
+except Exception:
+    leaves, casks = set(), set()
+transitive = {"abseil", "brotli", "c-ares", "ca-certificates", "cffi", "cryptography",
+              "gettext", "icu4c@77", "icu4c@78", "libnghttp2", "libunistring", "libuv",
+              "lz4", "mpdecimal", "openssl@3", "pcre2", "protobuf", "pycparser",
+              "python@3.13", "readline", "sqlite", "xz", "zlib-ng-compat", "zstd"}
+extra = sorted((leaves | casks) - declared - transitive)
+if extra:
+    print("EXTRA-BREW:" + ",".join(extra))
+else:
+    print("BREW-CLEAN")
+PY
+  )"
+  say "-- $BREW_REPORT"
+  case "$BREW_REPORT" in EXTRA-BREW:*) drift=1 ;; esac
+fi
+
+# 2b. flatpak extras not in manifests (Linux).
+if [ "$OS" = "Linux" ] && command -v flatpak &>/dev/null; then
+  FLAT_REPORT="$(
+    python3 - "$REPO" <<'PY'
+import subprocess, sys, tomllib, pathlib
+repo = pathlib.Path(sys.argv[1])
+declared = set()
+for f in ("shared.toml", "work.toml", "personal.toml"):
+    p = repo / "dot_config" / "packages" / f
+    if not p.exists():
+        continue
+    d = tomllib.load(open(p, "rb"))
+    declared.update((d.get("flatpak", {}) or {}).get("packages", []))
+try:
+    out = subprocess.run(["flatpak", "list", "--app", "--columns=application"],
+                         capture_output=True, text=True).stdout.split()
+    installed = {line.strip() for line in out if line.strip() and line.strip() != "Application"}
+except Exception:
+    installed = set()
+extra = sorted(installed - declared)
+if extra:
+    print("EXTRA-FLATPAK:" + ",".join(extra))
+else:
+    print("FLATPAK-CLEAN")
+PY
+  )"
+  say "-- $FLAT_REPORT"
+  case "$FLAT_REPORT" in EXTRA-FLATPAK:*) drift=1 ;; esac
+fi
+
+# 3. mise outdated.
+if command -v mise &>/dev/null; then
+  say "-- mise outdated:"
+  mise outdated 2>/dev/null || say "   (all current)"
+fi
+
+if [ "$drift" = "0" ]; then
+  say "== no drift detected =="
+  exit 0
+fi
+
+if [ "$MODE" = "--check" ]; then
+  say "== drift found (--check: not opening a PR) =="
+  exit 1
+fi
+
+# 4. Open a PR with the drift.
+if ! command -v gh &>/dev/null; then
+  say "gh missing: fix manifests by hand per docs/DECISION.md, then push." >&2
+  exit 1
+fi
+BRANCH="sync/$(whoami)-$(date +%Y%m%dT%H%M%S)"
+cd "$REPO"
+git checkout -b "$BRANCH"
+git add -A
+git commit -m "chore(sync): 🤖 record local machine drift" || true
+git push -u origin "$BRANCH"
+gh pr create --title "chore(sync): 🤖 record local machine drift" \
+  --body "Opened by dotfiles-sync on $OS. Review manifest changes, confirm no banned backends (CI runs manifest-lint)."

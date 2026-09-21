@@ -1,0 +1,33 @@
+# Work profile: merged on top of shared.toml when `is_work` is true.
+# Current work machine is the M4 Max Mac. IntelliJ lives HERE ONLY for now.
+# Personal Fedora must not install these unless `install_intellij` is flipped.
+
+[brew]
+formulae = [
+  "awscli",            # no good mise backend; work AWS usage
+  # mysql: confirmed WORK ONLY (personal has no database server).
+  # If you later need only a client: replace "mysql" with "mysql-client".
+  "mysql",
+]
+
+[cask]
+casks = [
+  "intellij-idea",     # WORK ONLY (see also install_intellij flag in .chezmoi.toml.tmpl)
+  "jetbrains-toolbox", # owns future IDE updates alongside brew
+  "postman",
+  # slack, zoom, rancher-desktop are MDM-provided via Intelligent Hub
+  # (see docs/MDM.md). Never declare them here.
+]
+
+[dnf]
+packages = []
+
+[flatpak]
+packages = []
+
+[winget]
+packages = [
+  "JetBrains.Toolbox",
+  "Postman.Postman",
+  # Slack/Zoom on Windows also come from Intelligent Hub, not winget.
+]

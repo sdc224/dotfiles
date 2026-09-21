@@ -1,0 +1,5 @@
+# Lint/coverage-only deps. The test suite itself is stdlib-only:
+#   python3 -m unittest discover -s tests/unit
+# Install this file only for the coverage gate and ruff lint/format.
+coverage>=7
+ruff>=0.4
