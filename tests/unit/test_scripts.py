@@ -177,9 +177,10 @@ class AutoUpdateScriptTest(unittest.TestCase):
         self.assertIn("mise upgrade", self.TEXT)
         self.assertIn("mise prune", self.TEXT)
 
-    def test_dnf_notify_only(self) -> None:
+    def test_dnf_updates_remain_owned_by_fedora(self) -> None:
         self.assertIn("dnf check-update", self.TEXT)
         self.assertNotIn("dnf upgrade", self.TEXT)
+        self.assertIn("OS scheduler performs DNF upgrades", self.TEXT)
 
     def test_drift_states_written(self) -> None:
         for state in ("clean", "drift-detected", "drift-pr-opened"):

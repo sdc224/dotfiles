@@ -14,6 +14,12 @@ packages = [
   # shared.toml already covers git/curl/zsh/wl-clipboard (gh lives in mise)
   "neovim",
   "distrobox",
+  # Docker's official DNF repository is enabled by the package dispatcher.
+  "docker-ce",
+  "docker-ce-cli",
+  "containerd.io",
+  "docker-buildx-plugin",
+  "docker-compose-plugin",
 ]
 
 [flatpak]
