@@ -110,7 +110,7 @@ class TestsWorkflowTest(unittest.TestCase):
 
     def test_matrix_covers_mac_and_linux(self) -> None:
         self.assertIn("macos-15", self.TEXT)
-        self.assertIn("ubuntu-latest", self.TEXT)
+        self.assertIn("ubuntu-24.04", self.TEXT)
 
     def test_fedora_container_job_exists(self) -> None:
         self.assertIn("fedora", self.TEXT)
