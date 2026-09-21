@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fedora smoke: blank-ish image → non-interactive chezmoi init --apply → verify.
+# Fedora smoke: blank-ish image → non-interactive chezmoi apply → verify.
 #
 # Usage:
 #   PROFILE=personal ./tests/smoke/run.sh
@@ -56,13 +56,15 @@ if [ "$PROFILE" = "work" ]; then
   mkdir -p "$HOME/.config/JetBrains/IntelliJIdeaSmoke/keymaps"
 fi
 
-mapfile -t PROMPT_ARGS < <(write_prompt_args "$PROFILE")
+# GHA container checkouts often have no .git (no git in the image at checkout
+# time), so `chezmoi init <path>` fails with: repository does not exist.
+# Mirror a completed init: write config + link source, then apply.
+write_smoke_config "$PROFILE"
+link_source_dir
 
-log "chezmoi init --apply (non-interactive prompts)"
+log "chezmoi apply (non-interactive, source=$HOME/.local/share/chezmoi)"
 set +e
-chezmoi init --apply -v \
-  "${PROMPT_ARGS[@]}" \
-  "$REPO_ROOT" \
+chezmoi apply -v \
   >"$SMOKE_APPLY_LOG" 2>&1
 APPLY_RC=$?
 set -e
@@ -71,7 +73,7 @@ set -e
 tail -n 80 "$SMOKE_APPLY_LOG" || true
 
 if [ "$APPLY_RC" -ne 0 ]; then
-  fail "chezmoi init --apply exited $APPLY_RC (full log: $SMOKE_APPLY_LOG)"
+  fail "chezmoi apply exited $APPLY_RC (full log: $SMOKE_APPLY_LOG)"
 fi
 
 assert_log_clean "$SMOKE_APPLY_LOG"

@@ -384,7 +384,7 @@ coverage report --fail-under=100 --show-missing
 | `tests/lib/repo.py` | Policy in testable Python (mise bans, profile merge, drift). **100% coverage gated.** |
 | `tests/unit/` | Manifests, mise template, chezmoi gates, aliases, Ghostty, workflows, scripts |
 | `tests/integration/test_converge.py` | Render + execute converge path for work vs personal (backends stubbed) |
-| `tests/smoke/` | Real Fedora `chezmoi init --apply` + binary checks (personal + work) |
+| `tests/smoke/` | Real Fedora `chezmoi apply` + binary checks (personal + work) |
 
 Full guide: [`docs/TESTING.md`](docs/TESTING.md). Feature matrix: [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
