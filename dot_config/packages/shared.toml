@@ -1,0 +1,49 @@
+# Shared packages: installed on every machine (work Mac + personal Fedora).
+# Single source of truth. The dispatcher (run_onchange_after_10-install-packages.sh.tmpl)
+# reads this plus work.toml OR personal.toml depending on `is_work`.
+# Backend rule (see docs/DECISION.md): if mise has it, it MUST NOT appear here.
+# Transitive brew deps (openssl, sqlite, icu4c, ...) are never listed.
+
+[brew]
+formulae = [
+  "git",               # newer than Apple git (macOS only, Fedora uses dnf)
+  "duti",              # macOS default-app setter for .sh/.zsh associations
+  "tealdeer",          # tldr client; stays in brew until mise ships arm64 binary
+  "docker",            # docker CLI only; daemon comes from Rancher Desktop (work-provided)
+  "docker-completion",
+  "protobuf",          # protoc compiler
+]
+
+[cask]
+casks = [
+  "ghostty",
+  "visual-studio-code",
+  "cursor",
+  "windsurf",
+  "font-jetbrains-mono-nerd-font",
+  "font-meslo-lg-nerd-font",
+  "firefox",
+  "google-chrome",
+]
+
+[dnf]
+packages = [
+  "git",
+  "curl",
+  "zsh",
+  "wl-clipboard",      # Wayland clipboard parity for Ghostty copy/paste
+]
+# Note: gh lives in mise (cross-platform), never in dnf. Fresh-machine GitHub
+# auth waits until `mise install` provides gh.
+
+[flatpak]
+packages = [
+  "org.mozilla.firefox",
+]
+
+[winget]
+packages = [
+  "Git.Git",
+  "Ghostty.Ghostty",
+  "Microsoft.VisualStudioCode",
+]

@@ -1,0 +1,46 @@
+name: Manifest lint (mise-first enforcement)
+
+on:
+  pull_request:
+    paths:
+      - "dot_config/packages/*.toml"
+      - "dot_config/mise/config.toml.tmpl"
+      - "run_onchange_after_15-enforce-mise.sh.tmpl"
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Fail if banned tools are declared outside mise
+        run: |
+          python3 - <<'PY'
+          import sys, tomllib
+          BANNED = {"node", "python", "python@3.13", "python@3.12", "python@3.11",
+                    "java", "kubectl", "kubernetes-cli", "gum", "gh"}
+          bad = []
+          for path in ("dot_config/packages/shared.toml",
+                       "dot_config/packages/work.toml",
+                       "dot_config/packages/personal.toml"):
+              try:
+                  with open(path, "rb") as f:
+                      data = tomllib.load(f)
+              except FileNotFoundError:
+                  continue
+              for section in ("brew", "dnf", "winget"):
+                  for n in (data.get(section, {}) or {}).get("formulae", []) + \
+                           (data.get(section, {}) or {}).get("packages", []):
+                      if n in BANNED:
+                          bad.append(f"{path}:{section}:{n}")
+          if bad:
+              print("BANNED tools must be installed via mise, not system backends:")
+              print("\n".join(f"  - {b}" for b in bad))
+              print("See docs/DECISION.md")
+              sys.exit(1)
+          print("manifest-lint: OK (mise-first holds)")
+          PY

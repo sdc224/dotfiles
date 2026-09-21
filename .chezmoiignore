@@ -1,11 +1,27 @@
-PLAN.md
 README.md
-install.sh
 cli_tools_guide.md
 .DS_Store
 .gitignore
 renovate.json
 .env.example
+
+# Repo-only content: never deployed to $HOME.
+docs/
+.github/
+bin/
+tests/
+pyproject.toml
+.coveragerc
+.coverage*
+htmlcov/
+
+# OS-gated schedulers: LaunchAgents only on macOS, systemd user units only on Linux.
+{{ if ne .chezmoi.os "darwin" }}
+Library/
+{{ end }}
+{{ if ne .chezmoi.os "linux" }}
+dot_config/systemd/
+{{ end }}
 
 # IDE-specific config files that Chezmoi should not manage
 .idea/

@@ -1,0 +1,27 @@
+# Personal profile: merged on top of shared.toml when `is_work` is false.
+# Current personal machine is Fedora. IntelliJ is intentionally ABSENT here;
+# to trial it on personal later, set `install_intellij = true` in chezmoi config
+# (no manifest refactor needed; dispatcher honours the flag).
+
+[brew]
+formulae = []
+
+[cask]
+casks = []
+
+[dnf]
+packages = [
+  # shared.toml already covers git/curl/zsh/wl-clipboard (gh lives in mise)
+  "neovim",
+  "distrobox",
+]
+
+[flatpak]
+packages = [
+  # No Slack/Zoom here: not needed on personal. Postman kept as the
+  # GUI API client; drop it if Hoppscotch/web clients cover you.
+  "com.postman.Postman",
+]
+
+[winget]
+packages = []

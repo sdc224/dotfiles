@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Deploy commit/PR rules to every agent IDE. Re-runs when sources change.
+# work rule hash: {{ include "dot_config/rules/commit-pr-jira.mdc" | sha256sum }}
+# personal rule hash: {{ include "dot_config/rules/personal-commits.mdc" | sha256sum }}
+set -euo pipefail
+
+SRC="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/rules"
+if [ ! -d "$SRC" ]; then
+  if [ -d "$HOME/.config/rules" ]; then
+    SRC="$HOME/.config/rules"
+  else
+    echo "rules: no rule store yet (chezmoi apply first)"
+    exit 0
+  fi
+fi
+
+{{ if .is_work -}}
+ACTIVE_RULE="commit-pr-jira"
+INACTIVE_RULE="personal-commits"
+{{ else -}}
+ACTIVE_RULE="personal-commits"
+INACTIVE_RULE="commit-pr-jira"
+{{ end -}}
+
+CURSOR_RULES="$HOME/.cursor/rules"
+CLAUDE_COMMANDS="$HOME/.claude/commands"
+CLAUDE_GLOBAL="$HOME/.claude/CLAUDE.md"
+GEMINI_GLOBAL="$HOME/.gemini/GEMINI.md"
+
+# Content compare that works without diffutils (fedora:latest containers
+# ship coreutils but not cmp; a missing cmp would spuriously backup).
+files_differ() {
+  if command -v cmp >/dev/null 2>&1; then
+    ! cmp -s "$1" "$2"
+  else
+    [ "$(cksum <"$1")" != "$(cksum <"$2")" ]
+  fi
+}
+
+deploy_mdc() {
+  local src="$1" dest_dir="$2" name="$3"
+  mkdir -p "$dest_dir"
+  if [ -f "$dest_dir/$name" ] && files_differ "$src" "$dest_dir/$name"; then
+    cp "$dest_dir/$name" "$dest_dir/$name.backup.$(date +%Y%m%dT%H%M%S)"
+  fi
+  cp "$src" "$dest_dir/$name"
+  echo "rules: $name -> $dest_dir"
+}
+
+# Claude commands and Antigravity globals are plain markdown: the Cursor
+# .mdc frontmatter (description/alwaysApply) is stripped on the way out.
+strip_frontmatter() {
+  awk 'NR==1 && $0=="---" {in_fm=1; next} in_fm && $0=="---" {in_fm=0; next} !in_fm' "$1" > "$2"
+}
+
+# ensure_block FILE START END BODY: replace (or append) the fenced managed
+# block. Creates the file with a header when absent. Never touches user
+# content outside the fence.
+ensure_block() {
+  python3 - "$1" "$2" "$3" "$4" <<'PY'
+import pathlib, sys
+path, start, end, body_file = sys.argv[1:4][0], sys.argv[2], sys.argv[3], sys.argv[4]
+body = pathlib.Path(body_file).read_text()
+block = f"{start}\n{body.rstrip()}\n{end}\n"
+p = pathlib.Path(path)
+p.parent.mkdir(parents=True, exist_ok=True)
+text = p.read_text() if p.exists() else "# Global preferences\n"
+if start in text and end in text:
+    before, rest = text.split(start, 1)
+    _, after = rest.split(end, 1)
+    text = before + block + after.lstrip("\n")
+    if not text.endswith("\n"):
+        text += "\n"
+else:
+    if not text.endswith("\n"):
+        text += "\n"
+    text = text + "\n" + block
+p.write_text(text)
+PY
+  echo "rules: managed block refreshed in $1"
+}
+
+remove_if_present() {
+  if [ -e "$1" ] || [ -L "$1" ]; then
+    rm -f "$1"
+    echo "rules: removed inactive $1"
+  fi
+}
+
+# 1. Cursor keeps the .mdc (frontmatter intact).
+deploy_mdc "$SRC/$ACTIVE_RULE.mdc" "$CURSOR_RULES" "$ACTIVE_RULE.mdc"
+remove_if_present "$CURSOR_RULES/$INACTIVE_RULE.mdc"
+
+# 2. Claude Code: slash command (plain .md) + global CLAUDE.md block.
+TMP_BODY="$(mktemp)"
+trap 'rm -f "$TMP_BODY"' EXIT
+strip_frontmatter "$SRC/$ACTIVE_RULE.mdc" "$TMP_BODY"
+mkdir -p "$CLAUDE_COMMANDS"
+cp "$TMP_BODY" "$CLAUDE_COMMANDS/$ACTIVE_RULE.md"
+echo "rules: $ACTIVE_RULE.md -> $CLAUDE_COMMANDS"
+remove_if_present "$CLAUDE_COMMANDS/$INACTIVE_RULE.md"
+ensure_block "$CLAUDE_GLOBAL" "<!-- dotfiles-rules:start -->" "<!-- dotfiles-rules:end -->" "$TMP_BODY"
+
+# 3. Antigravity: global rules live in ~/.gemini/GEMINI.md (single file,
+# 12k-char limit per rule — both rule bodies are ~2k). Workspace
+# .agents/rules is per-repo by design, so home dotfiles stay global-only.
+ensure_block "$GEMINI_GLOBAL" "<!-- dotfiles-rules:start -->" "<!-- dotfiles-rules:end -->" "$TMP_BODY"
