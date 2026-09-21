@@ -27,7 +27,8 @@ fi
 # 2. brew extras not in manifests (macOS).
 if [ "$OS" = "Darwin" ] && command -v brew &>/dev/null; then
   # List top-level leaves vs declared brew/cask names.
-  BREW_REPORT="$(python3 - "$REPO" <<'PY'
+  BREW_REPORT="$(
+    python3 - "$REPO" <<'PY'
 import subprocess, sys, tomllib, pathlib
 repo = pathlib.Path(sys.argv[1])
 declared = set()
@@ -53,14 +54,15 @@ if extra:
 else:
     print("BREW-CLEAN")
 PY
-)"
+  )"
   say "-- $BREW_REPORT"
   case "$BREW_REPORT" in EXTRA-BREW:*) drift=1 ;; esac
 fi
 
 # 2b. flatpak extras not in manifests (Linux).
 if [ "$OS" = "Linux" ] && command -v flatpak &>/dev/null; then
-  FLAT_REPORT="$(python3 - "$REPO" <<'PY'
+  FLAT_REPORT="$(
+    python3 - "$REPO" <<'PY'
 import subprocess, sys, tomllib, pathlib
 repo = pathlib.Path(sys.argv[1])
 declared = set()
@@ -82,7 +84,7 @@ if extra:
 else:
     print("FLATPAK-CLEAN")
 PY
-)"
+  )"
   say "-- $FLAT_REPORT"
   case "$FLAT_REPORT" in EXTRA-FLATPAK:*) drift=1 ;; esac
 fi

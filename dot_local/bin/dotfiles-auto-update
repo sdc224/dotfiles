@@ -6,8 +6,8 @@ set -uo pipefail
 # Ensure launchd/systemd can find our bins + brew without shadowing a
 # caller-provided PATH (integration tests put stubs first).
 case ":$PATH:" in
-  *":$HOME/.local/bin:"*) ;;
-  *) PATH="$HOME/.local/bin:$PATH" ;;
+*":$HOME/.local/bin:"*) ;;
+*) PATH="$HOME/.local/bin:$PATH" ;;
 esac
 if ! command -v brew >/dev/null 2>&1; then
   PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -30,7 +30,7 @@ if [ "${1:-}" != "--force" ] && [ -f "$STATUS" ]; then
   if [ -n "$LAST" ]; then
     LAST_EPOCH="$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LAST" +%s 2>/dev/null || date -d "$LAST" +%s 2>/dev/null || echo 0)"
     NOW_EPOCH="$(date +%s)"
-    if [ "$LAST_EPOCH" -gt 0 ] && [ $(( (NOW_EPOCH - LAST_EPOCH) / 86400 )) -lt "$STALE_DAYS" ]; then
+    if [ "$LAST_EPOCH" -gt 0 ] && [ $(((NOW_EPOCH - LAST_EPOCH) / 86400)) -lt "$STALE_DAYS" ]; then
       echo "auto-update: last run $LAST is fresh (< ${STALE_DAYS}d), skipping (use --force to override)"
       exit 0
     fi
@@ -56,7 +56,7 @@ if [ "$(uname -s)" = "Linux" ]; then
     flatpak update -y || true
   fi
   if command -v dnf &>/dev/null; then
-    dnf check-update || true  # notify only; do not upgrade OS packages here
+    dnf check-update || true # notify only; do not upgrade OS packages here
   fi
 fi
 
@@ -74,10 +74,10 @@ if command -v dotfiles-sync &>/dev/null; then
     DRIFT="drift-detected"
     echo "auto-update: drift detected, see log above" >&2
     REPO="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
-    if [ "${DOTFILES_SYNC_AUTO_PR:-1}" = "1" ] \
-       && [ -n "$(cd "$REPO" 2>/dev/null && git status --porcelain 2>/dev/null || true)" ] \
-       && command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1 \
-       && [ -z "$(gh pr list --search "record local machine drift in:title" --state open --json number -q '.[].number' 2>/dev/null || true)" ]; then
+    if [ "${DOTFILES_SYNC_AUTO_PR:-1}" = "1" ] &&
+      [ -n "$(cd "$REPO" 2>/dev/null && git status --porcelain 2>/dev/null || true)" ] &&
+      command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1 &&
+      [ -z "$(gh pr list --search "record local machine drift in:title" --state open --json number -q '.[].number' 2>/dev/null || true)" ]; then
       echo "auto-update: repo has changes and no open sync PR, opening one"
       dotfiles-sync >>"$LOG" 2>&1 || true
       DRIFT="drift-pr-opened"
@@ -89,7 +89,7 @@ fi
 
 # How the result reaches you (three channels, no silent failures):
 # 1. Status file: latest run summary for scripts/prompts (`cat` it any time).
-printf 'last_run=%s\nresult=ok\ndrift=%s\nlog=%s\n' "$START" "$DRIFT" "$LOG" > "$STATUS"
+printf 'last_run=%s\nresult=ok\ndrift=%s\nlog=%s\n' "$START" "$DRIFT" "$LOG" >"$STATUS"
 # 2. Desktop toast so a weekly background run is visible.
 NOTICE="brew + mise + casks updated."
 [ "$DRIFT" = "clean" ] || NOTICE="drift detected ($DRIFT) - check log: ~/.local/share/dotfiles-update.log"
