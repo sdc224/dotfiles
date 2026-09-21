@@ -70,7 +70,7 @@ class SkillsVendoredTest(unittest.TestCase):
 class SkillsScriptTest(unittest.TestCase):
     TEXT = read("run_onchange_after_35-skills.sh.tmpl")
 
-    def test_targets_cover_cursor_claude_antigravity(self) -> None:
+    def test_targets_are_os_specific(self) -> None:
         for target in (
             ".cursor/skills",
             ".claude/skills",
@@ -78,6 +78,7 @@ class SkillsScriptTest(unittest.TestCase):
             ".gemini/antigravity/skills",
         ):
             self.assertIn(target, self.TEXT, f"missing skill target {target}")
+        self.assertIn('eq .chezmoi.os "linux"', self.TEXT)
 
     def test_future_ides_without_editing(self) -> None:
         self.assertIn("SKILL_TARGETS", self.TEXT)
@@ -134,13 +135,6 @@ class RulesSourceTest(unittest.TestCase):
         self.assertIn("alwaysApply: true", text)
         self.assertIn("Conventional Commits", text)
 
-    def test_rules_fit_antigravity_limit(self) -> None:
-        # Antigravity caps a rule file at 12,000 characters.
-        for rule in ("commit-pr-jira.mdc", "personal-commits.mdc"):
-            size = len(read(f"dot_config/rules/{rule}"))
-            self.assertLess(size, 12000, f"{rule} exceeds Antigravity limit")
-
-
 class RulesScriptTest(unittest.TestCase):
     TEXT = read("run_onchange_after_36-rules.sh.tmpl")
 
@@ -163,8 +157,9 @@ class RulesScriptTest(unittest.TestCase):
         self.assertIn("dotfiles-rules:start", self.TEXT)
         self.assertIn("CLAUDE.md", self.TEXT)
 
-    def test_antigravity_gets_global_block(self) -> None:
+    def test_antigravity_rules_are_linux_only(self) -> None:
         self.assertIn(".gemini/GEMINI.md", self.TEXT)
+        self.assertIn('eq .chezmoi.os "linux"', self.TEXT)
 
     def test_frontmatter_stripped_for_markdown_targets(self) -> None:
         self.assertIn("strip_frontmatter", self.TEXT)

@@ -49,8 +49,8 @@
 # until its mise arm64 binary exists.
 #
 # 6. Agent skills live in dot_config/skills/ (one folder per skill, SKILL.md
-#    with name+description frontmatter) and symlink into every IDE that reads
-#    the open skill standard: ~/.cursor/skills, ~/.claude/skills,
+#    with name+description frontmatter) and symlink into the host OS's IDEs:
+#    macOS uses ~/.cursor/skills + ~/.claude/skills; Fedora uses
 #    ~/.gemini/config/skills + legacy ~/.gemini/antigravity/skills
 #    (Antigravity 2.x global discovery is flaky — both paths maximize hits).
 #    Future IDE? Append SKILL_TARGETS_EXTRA (env) — no script edit needed.
@@ -62,9 +62,8 @@
 #
 # 7. Agent rules live in dot_config/rules/*.mdc and are profile-gated like
 #    kubectl: is_work machines get commit-pr-jira (DXS/Jira), personal
-#    machines get personal-commits (same style, no Jira). Cursor keeps the
-#    .mdc; Claude gets a frontmatter-stripped command in
-#    ~/.claude/commands plus a managed block in ~/.claude/CLAUDE.md;
-#    Antigravity gets the same managed block in ~/.gemini/GEMINI.md
-#    (global scope — workspace .agents/rules stays per-repo by design).
-#    Rule bodies must stay under Antigravity's 12,000-char per-file cap.
+#    machines get personal-commits (same style, no Jira). On macOS Cursor
+#    keeps the .mdc and Claude gets a frontmatter-stripped command plus a
+#    managed CLAUDE.md block. On Fedora, Antigravity gets the managed
+#    ~/.gemini/GEMINI.md block (global scope — workspace .agents/rules stays
+#    per-repo by design).
