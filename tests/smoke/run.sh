@@ -37,10 +37,10 @@ dnf install -y \
   fontconfig unzip \
   >/dev/null
 
-# Chezmoi binary (same entrypoint as docs/MANUAL.md).
+# Chezmoi binary (retry + GitHub fallback; release CDNs 504 in CI).
 if ! command -v chezmoi &>/dev/null; then
   log "installing chezmoi"
-  sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+  bash "$REPO_ROOT/tests/lib/install-chezmoi.sh" /usr/local/bin
 fi
 require_cmd chezmoi
 require_cmd python3
