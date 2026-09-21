@@ -201,6 +201,12 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         self.assertIn("$(uname -m)", text)
         self.assertNotIn("Homebrew (arm64)", text)
 
+    def test_bootstrap_linux_installs_mise_build_deps(self) -> None:
+        # cargo:procs/tokei need cc; Node needs libatomic.so.1 on Fedora.
+        text = read("run_once_before_00-bootstrap.sh.tmpl")
+        self.assertIn("libatomic", text)
+        self.assertIn("gcc", text)
+
     def test_bootstrap_installs_nerd_fonts_linux(self) -> None:
         text = read("run_once_before_00-bootstrap.sh.tmpl")
         self.assertIn("NerdFonts", text)

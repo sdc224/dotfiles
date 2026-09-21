@@ -19,9 +19,10 @@ if [ "$OS" = "Darwin" ]; then
   brew list git &>/dev/null || brew install git
 elif [ "$OS" = "Linux" ]; then
   if command -v dnf &>/dev/null; then
-    sudo dnf install -y git curl zsh gh flatpak 2>/dev/null || true
+    # gcc + libatomic: mise cargo:* tools compile from source; Node needs libatomic.so.1
+    sudo dnf install -y git curl zsh gh flatpak gcc libatomic 2>/dev/null || true
   elif command -v apt &>/dev/null; then
-    sudo apt update && sudo apt install -y git curl zsh flatpak 2>/dev/null || true
+    sudo apt update && sudo apt install -y git curl zsh flatpak gcc libatomic1 2>/dev/null || true
   fi
   # Nerd Fonts (Linux): JetBrains Mono + Meslo for Ghostty/VS Code parity.
   # Best-effort only — not required to converge. GitHub release CDNs 504 in CI.

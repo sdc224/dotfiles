@@ -29,12 +29,14 @@ if [ "${SKIP_SYSTEMCTL_SHIM:-0}" != "1" ]; then
   install_systemctl_shim /usr/local/bin
 fi
 
-# Primitives the bootstrap/dispatcher expect on a fresh Fedora host.
+# Primitives the bootstrap/dispatcher/mise expect on a fresh Fedora host.
+# gcc + libatomic: cargo:procs/tokei compile from source; Node needs libatomic.so.1
 log "installing base OS packages for smoke host"
 dnf install -y \
   curl tar gzip diffutils findutils which \
   python3 git sudo passwd shadow-utils \
   fontconfig unzip \
+  gcc libatomic \
   >/dev/null
 
 # Chezmoi binary (retry + GitHub fallback; release CDNs 504 in CI).

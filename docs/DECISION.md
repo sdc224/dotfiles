@@ -45,8 +45,10 @@
 #
 # arm64 (M4) note: every mise tool in config.toml ships an arm64 prebuild
 # except cargo:procs and cargo:tokei, which compile from source on first
-# install (arm64-safe). tealdeer is the single documented brew exception
-# until its mise arm64 binary exists.
+# install (arm64-safe). Linux bootstrap installs `gcc` + `libatomic` so those
+# cargo builds and Node (libatomic.so.1) work on minimal Fedora/Ubuntu images.
+# tealdeer is the single documented brew exception until its mise arm64 binary
+# exists.
 #
 # 6. Agent skills live in dot_config/skills/ (one folder per skill, SKILL.md
 #    with name+description frontmatter) and symlink into the host OS's IDEs:
