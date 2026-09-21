@@ -81,5 +81,10 @@ chezmoi apply
 mise upgrade
 ```
 
+### Health check
+```bash
+dotfiles-doctor   # verify setup, invoke owning modules on failure, read logs
+```
+
 ### Why Chezmoi instead of Stow?
 `chezmoi` is more powerful than `stow` (which uses symlinks). It allows us to use **one** file for both Mac and Fedora by using templates. You don't need to manually symlink anything; `chezmoi apply` handles it all for you.

@@ -122,6 +122,7 @@ class TestsWorkflowTest(unittest.TestCase):
     def test_shellcheck_guards_shipped_scripts(self) -> None:
         self.assertIn("shellcheck", self.TEXT)
         self.assertIn("dotfiles-sync", self.TEXT)
+        self.assertIn("dotfiles-doctor", self.TEXT)
 
 
 if __name__ == "__main__":

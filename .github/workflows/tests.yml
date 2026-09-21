@@ -43,9 +43,9 @@ jobs:
       - name: Install shellcheck and shfmt
         run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck shfmt
       - name: shellcheck shipped scripts
-        run: shellcheck -S warning dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update
+        run: shellcheck -S warning dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update dot_local/bin/dotfiles-doctor
       - name: shfmt formatting check (2-space indent, repo style)
-        run: shfmt -i 2 --diff dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update
+        run: shfmt -i 2 --diff dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update dot_local/bin/dotfiles-doctor
       # Template rendering (chezmoi execute-template / cat) is covered by
       # the integration jobs, which run the real templates per profile.
 

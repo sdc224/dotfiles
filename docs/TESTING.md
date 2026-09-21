@@ -34,7 +34,9 @@ python -m pytest tests/integration -q
 - `tests/integration/test_converge.py` — executes real artifacts with stub
   `brew`/`dnf`/`flatpak`/`mise`/`gh`: chezmoi renders for `work` vs
   `personal`, the rendered dispatcher, `dotfiles-sync --check` clean + drift,
-  and `dotfiles-auto-update` staleness guard + status file.
+  `dotfiles-auto-update` staleness guard + status file, and
+  `dotfiles-doctor` healthy/broken/scheduler/gh-required/log-evaluation
+  against a fake HOME.
 
 ## What "100% coverage" means
 

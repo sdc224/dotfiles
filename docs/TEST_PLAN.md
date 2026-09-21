@@ -76,8 +76,21 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | greedy cask upgrade, mise upgrade+prune | ✅ | ✅ | auto (stubs) |
 | dnf notify-only (never upgrades OS) | n/a | ✅ | unit + auto |
 
-## 8. Work-profile assumptions (cross-cutting)
+## 8. Doctor (`dotfiles-doctor`: verify, invoke modules, read logs)
 
+| Case | macOS | Fedora | Status |
+|---|---|---|---|
+| healthy machine exits 0 with `[ok]` lines | ✅ | ✅ | auto (stubs + fake HOME) |
+| missing package manager exits 1 with `[fail]` + owner module | ✅ | ✅ | auto + ci-only |
+| drift asks apply / re-add / skip, never auto-reverts | ✅ | ✅ | unit (prompt gating) |
+| scheduler auto-enabled on the spot, fail if it cannot | ✅ | ✅ | auto + ci-only |
+| gh auth required: prompts, fails until authed | ✅ | ✅ | auto + ci-only |
+| work profile notes second-account switch option | ✅ | ✅ | unit |
+| stale status / dirty log surface as warnings | ✅ | ✅ | auto (fake status + log) |
+| destructive choices only behind TTY prompts | ✅ | ✅ | unit (code scan) |
+| shellcheck + shfmt clean | ✅ | ✅ | ci-only (lint job) |
+
+## 9. Work-profile assumptions (cross-cutting)
 | Assumption | Covered by |
 |---|---|
 | IntelliJ/AWS/MySQL never install on personal | auto (`DispatcherExecutionTest`, render) |
