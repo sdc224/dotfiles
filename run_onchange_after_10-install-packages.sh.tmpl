@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# {{ include "dot_config/packages/shared.toml" | sha256sum }} {{ if .is_work }}{{ include "dot_config/packages/work.toml" | sha256sum }}{{ else }}{{ include "dot_config/packages/personal.toml" | sha256sum }}{{ end }}
+# Dispatcher: installs generic manifests for this machine. Re-runs when manifests change
+# (hashes above alter script content, triggering chezmoi run_onchange).
+# Profile rendered at apply time: is_work={{ .is_work }}, os={{ .chezmoi.os }}, arch={{ .chezmoi.arch }}.
+set -euo pipefail
+
+SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/packages"
+if [ ! -d "$SRC_DIR" ]; then
+  # Fallback when run from a repo checkout directly.
+  SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo .)"
+  SRC_DIR="$SCRIPT_DIR/dot_config/packages"
+fi
+SHARED="$SRC_DIR/shared.toml"
+{{ if .is_work -}}
+OVERLAY="$SRC_DIR/work.toml"
+{{ else -}}
+OVERLAY="$SRC_DIR/personal.toml"
+{{ end -}}
+
+if ! command -v python3 &>/dev/null; then
+  echo "dispatcher: python3 required to parse manifests, skipping" >&2
+  exit 0
+fi
+
+# Emit "backend:name" lines for shared+overlay, parsed by shell below.
+PLAN="$(python3 - "$SHARED" "$OVERLAY" <<'PY'
+import sys, tomllib
+def load(p):
+    try:
+        with open(p, 'rb') as f:
+            return tomllib.load(f)
+    except FileNotFoundError:
+        return {}
+seen = set()
+for path in sys.argv[1:]:
+    data = load(path)
+    for section, backend in (('brew', 'brew'), ('cask', 'cask'), ('dnf', 'dnf'), ('flatpak', 'flatpak'), ('winget', 'winget')):
+        items = (data.get(section, {}) or {})
+        names = items.get('formulae') or items.get('casks') or items.get('packages') or []
+        for n in names:
+            key = (backend, n)
+            if key not in seen:
+                seen.add(key)
+                print(f"{backend}:{n}")
+PY
+)"
+
+OS="$(uname -s)"
+install_brew_pkg() {
+  if ! command -v brew &>/dev/null; then return 0; fi
+  local pkg="$1"
+  brew list "$pkg" &>/dev/null || brew install "$pkg"
+}
+install_cask_pkg() {
+  if ! command -v brew &>/dev/null; then return 0; fi
+  local cask="$1"
+  brew list --cask "$cask" &>/dev/null || brew install --cask "$cask"
+}
+
+case "$OS" in
+  Darwin)
+    if ! command -v brew &>/dev/null; then
+      echo "dispatcher: brew missing (bootstrap should have installed it), skipping brew part" >&2
+    else
+      echo "$PLAN" | grep '^brew:' | cut -d: -f2- | while read -r p; do [ -n "$p" ] && install_brew_pkg "$p"; done || true
+      echo "$PLAN" | grep '^cask:' | cut -d: -f2- | while read -r c; do [ -n "$c" ] && install_cask_pkg "$c"; done || true
+      # Drop iTerm2 per single-terminal decision.
+      if brew list --cask iterm2 &>/dev/null; then
+        echo "dispatcher: removing iterm2 (Ghostty-only policy)"
+        brew uninstall --cask iterm2 || true
+      fi
+    fi
+    ;;
+  Linux)
+    if command -v dnf &>/dev/null; then
+      mapfile -t DNFS < <(echo "$PLAN" | grep '^dnf:' | cut -d: -f2- | grep -v '^$' || true)
+      if [ "${#DNFS[@]}" -gt 0 ]; then
+        sudo dnf install -y "${DNFS[@]}"
+      fi
+      # Ghostty on Fedora comes from COPR (binary not in default repos).
+      if ! command -v ghostty &>/dev/null; then
+        sudo dnf copr enable -y ghostty/ghostty 2>/dev/null && sudo dnf install -y ghostty || true
+      fi
+    fi
+    if command -v flatpak &>/dev/null; then
+      flatpak remote-list 2>/dev/null | grep -q flathub || flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || true
+      echo "$PLAN" | grep '^flatpak:' | cut -d: -f2- | while read -r f; do
+        [ -n "$f" ] && flatpak install -y flathub "$f" || true
+      done || true
+    fi
+    ;;
+  MINGW*|MSYS*|CYGWIN*|Windows_NT)
+    if command -v winget &>/dev/null; then
+      echo "$PLAN" | grep '^winget:' | cut -d: -f2- | while read -r w; do
+        [ -n "$w" ] && winget install -e --id "$w" || true
+      done || true
+    fi
+    ;;
+esac
+
+echo "dispatcher: done (profile: {{ if .is_work }}work{{ else }}personal{{ end }}, os: $OS)"
