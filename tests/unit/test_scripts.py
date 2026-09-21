@@ -115,6 +115,13 @@ class DispatcherScriptTest(unittest.TestCase):
     def test_winget_branch_exists(self) -> None:
         self.assertIn("winget", self.TEXT)
 
+    def test_docker_repo_uses_enabled_repolist(self) -> None:
+        # Regression: DNF5 `repolist --all <id>` exits 0 when missing.
+        self.assertIn("repolist --enabled", self.TEXT)
+        self.assertIn("rpm --import", self.TEXT)
+        self.assertIn("DOCKER_PKGS", self.TEXT)
+        self.assertNotIn("repolist --all docker-ce-stable", self.TEXT)
+
 
 class SyncScriptTest(unittest.TestCase):
     TEXT = read("dot_local/bin/dotfiles-sync")

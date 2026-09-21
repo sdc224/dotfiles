@@ -204,10 +204,15 @@ class DispatcherExecutionTest(unittest.TestCase):
         write_stub(
             bin_dir,
             "dnf",
-            f'[ "$1" = "repolist" ] && exit 1\necho "dnf $*" >> "{log}"\nexit 0',
+            # Never claim docker-ce-stable is enabled so personal profile
+            # exercises addrepo (DNF5-safe enabled-repolist check).
+            f'echo "dnf $*" >> "{log}"\n'
+            'if [[ "$*" == *repolist* ]]; then echo "fedora"; exit 0; fi\n'
+            "exit 0",
         )
         write_stub(bin_dir, "flatpak", f'echo "flatpak $*" >> "{log}"\nexit 0')
         write_stub(bin_dir, "systemctl", f'echo "systemctl $*" >> "{log}"\nexit 0')
+        write_stub(bin_dir, "rpm", f'echo "rpm $*" >> "{log}"\nexit 0')
         write_stub(bin_dir, "sudo", 'exec "$@"')
         rendered = render_script(
             profile, "run_onchange_after_10-install-packages.sh.tmpl"
@@ -271,6 +276,7 @@ class DispatcherExecutionTest(unittest.TestCase):
         self.assertIn("neovim", calls)
         self.assertIn("dnf config-manager addrepo --from-repofile", calls)
         self.assertIn("docker-ce", calls)
+        self.assertIn("rpm --import", calls)
         self.assertIn("systemctl enable --now docker.service", calls)
 
 
