@@ -168,7 +168,14 @@ class ChezmoiWorkProfileTest(unittest.TestCase):
             self.assertIn("dotfiles-rules:start", out)
 
     def test_launchd_plist_renders_home(self) -> None:
-        out = render("work", "Library/LaunchAgents/com.dotfiles.update.plist")
+        # Library/ is chezmoiignored on non-darwin; exercise managed cat on
+        # macOS and template expansion everywhere else.
+        if IS_DARWIN:
+            out = render("work", "Library/LaunchAgents/com.dotfiles.update.plist")
+        else:
+            out = render_script(
+                "work", "Library/LaunchAgents/com.dotfiles.update.plist.tmpl"
+            )
         self.assertIn("dotfiles-auto-update", out)
         self.assertNotIn("{{", out)
 

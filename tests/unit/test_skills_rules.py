@@ -174,6 +174,9 @@ class RulesScriptTest(unittest.TestCase):
 
     def test_backs_up_changed_rules(self) -> None:
         self.assertIn(".backup.", self.TEXT)
+        # cmp is optional: fedora containers may lack diffutils.
+        self.assertIn("files_differ", self.TEXT)
+        self.assertIn("cksum", self.TEXT)
 
 
 if __name__ == "__main__":

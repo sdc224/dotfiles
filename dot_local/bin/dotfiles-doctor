@@ -192,9 +192,9 @@ fi
 
 # 6. Shell + terminal basics.
 if [ -f "$HOME/.zshrc" ]; then
-  ok "~/.zshrc present"
+  ok "${HOME}/.zshrc present"
 else
-  fail "~/.zshrc missing"
+  fail "${HOME}/.zshrc missing"
 fi
 if [ -f "$HOME/.config/ghostty/config" ]; then
   ok "ghostty config deployed"

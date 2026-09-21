@@ -27,10 +27,20 @@ CLAUDE_COMMANDS="$HOME/.claude/commands"
 CLAUDE_GLOBAL="$HOME/.claude/CLAUDE.md"
 GEMINI_GLOBAL="$HOME/.gemini/GEMINI.md"
 
+# Content compare that works without diffutils (fedora:latest containers
+# ship coreutils but not cmp; a missing cmp would spuriously backup).
+files_differ() {
+  if command -v cmp >/dev/null 2>&1; then
+    ! cmp -s "$1" "$2"
+  else
+    [ "$(cksum <"$1")" != "$(cksum <"$2")" ]
+  fi
+}
+
 deploy_mdc() {
   local src="$1" dest_dir="$2" name="$3"
   mkdir -p "$dest_dir"
-  if [ -f "$dest_dir/$name" ] && ! cmp -s "$src" "$dest_dir/$name"; then
+  if [ -f "$dest_dir/$name" ] && files_differ "$src" "$dest_dir/$name"; then
     cp "$dest_dir/$name" "$dest_dir/$name.backup.$(date +%Y%m%dT%H%M%S)"
   fi
   cp "$src" "$dest_dir/$name"
