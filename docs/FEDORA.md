@@ -15,6 +15,7 @@ to finalize in `dot_config/packages/personal.toml` ([dnf] / [flatpak]).
 - Local drift PRs: run `dotfiles-sync` after hand-installing anything; it
   diffs manifests and opens a PR via `gh`.
 - Docker Engine is declared in `personal.toml`. The dispatcher enables Docker's
-  signed DNF repository through DNF itself (no curl installer), installs Engine,
-  Buildx, and Compose, then enables `docker.service`. Sign out and back in
+  signed DNF repository through DNF itself (no curl installer), imports the
+  Docker GPG key, installs Engine/Buildx/Compose, then enables `docker.service`.
+  Repo detection uses `dnf repolist --enabled` (DNF5-safe). Sign out and back in
   after adding yourself to the `docker` group if you want non-`sudo` access.
