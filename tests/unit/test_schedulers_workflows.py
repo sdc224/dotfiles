@@ -118,6 +118,9 @@ class TestsWorkflowTest(unittest.TestCase):
     def test_integration_runs_both_profiles(self) -> None:
         self.assertIn("tests/integration", self.TEXT)
 
+    def test_chezmoi_install_uses_retry_helper(self) -> None:
+        self.assertIn("tests/lib/install-chezmoi.sh", self.TEXT)
+
     def test_shellcheck_guards_shipped_scripts(self) -> None:
         self.assertIn("shellcheck", self.TEXT)
         self.assertIn("dotfiles-sync", self.TEXT)
