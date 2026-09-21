@@ -8,7 +8,7 @@ OS="$(uname -s)"
 
 if [ "$OS" = "Darwin" ]; then
   if ! command -v brew &>/dev/null; then
-    echo "bootstrap: installing Homebrew (arm64)..."
+    echo "bootstrap: installing Homebrew for $(uname -m)..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
   if [ -f "/opt/homebrew/bin/brew" ]; then

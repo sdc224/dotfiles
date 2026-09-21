@@ -1,9 +1,9 @@
 [data]
-    name = {{ promptString "Enter your Git display name (e.g. Sourodeep Chatterjee)" | quote }}
-    email = {{ promptString "Enter the email address for your Git commits" | quote }}
+    name = {{ promptString "Git name" | quote }}
+    email = {{ promptString "Git email" | quote }}
     # Work Mac today, personal Fedora. Default follows the OS so re-provisioning
     # is one Enter: true on darwin, false elsewhere. Override at `chezmoi init` time.
-    is_work = {{ promptBool "Is this a Work machine? (work profile: IntelliJ, AWS, MySQL)" (eq .chezmoi.os "darwin") }}
+    is_work = {{ promptBool "Work machine" (eq .chezmoi.os "darwin") }}
     # IntelliJ gate: true on work by default, personal trials flip this to true
     # with `chezmoi init` (no manifest refactor needed).
-    install_intellij = {{ promptBool "Install IntelliJ IDEA? (work default yes, personal default no)" (eq .chezmoi.os "darwin") }}
+    install_intellij = {{ promptBool "Install IntelliJ IDEA" (eq .chezmoi.os "darwin") }}

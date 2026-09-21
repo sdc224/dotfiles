@@ -2,8 +2,7 @@
 
 Runs `bash -n` on every script and asserts the key policy strings that
 integration tests then execute with stubbed package managers:
-  - dispatcher profile selection, iterm2 removal, COPR ghostty, winget
-  - enforce-mise guard list matches BANNED set minus casks
+  - dispatcher profile selection, existing-cask protection, COPR ghostty, winget
   - dotfiles-sync drift/PR behaviour and --check flag
   - auto-update staleness guard, greedy brew, drift states, notifications
 """
@@ -19,7 +18,6 @@ REPO = repo.REPO_ROOT
 SCRIPTS = [
     "run_once_before_00-bootstrap.sh.tmpl",
     "run_onchange_after_10-install-packages.sh.tmpl",
-    "run_onchange_after_15-enforce-mise.sh.tmpl",
     "run_onchange_after_20-mise-install.sh.tmpl",
     "run_onchange_after_30-ide-keys.sh.tmpl",
     "run_onchange_after_35-skills.sh.tmpl",
@@ -99,8 +97,14 @@ class DispatcherScriptTest(unittest.TestCase):
         # grep finds nothing -> exit 1 -> pipefail would kill the script.
         self.assertIn("done || true", self.TEXT)
 
-    def test_removes_iterm2(self) -> None:
-        self.assertIn("iterm2", self.TEXT)
+    def test_skips_existing_unmanaged_cask_payloads(self) -> None:
+        self.assertIn("cask_payload_exists", self.TEXT)
+        self.assertIn("/Applications/Cursor.app", self.TEXT)
+        self.assertIn("Library/Fonts", self.TEXT)
+        self.assertIn("skipping cask", self.TEXT)
+
+    def test_never_uninstalls_packages(self) -> None:
+        self.assertNotIn("brew uninstall", self.TEXT)
 
     def test_fedora_copr_ghostty(self) -> None:
         self.assertIn("ghostty/ghostty", self.TEXT)
@@ -110,24 +114,6 @@ class DispatcherScriptTest(unittest.TestCase):
 
     def test_winget_branch_exists(self) -> None:
         self.assertIn("winget", self.TEXT)
-
-
-class EnforceMiseScriptTest(unittest.TestCase):
-    TEXT = read("run_onchange_after_15-enforce-mise.sh.tmpl")
-
-    def test_banned_list_matches_repo_policy(self) -> None:
-        for formula in repo.GUARD_BANNED_FORMULAE:
-            self.assertIn(formula, self.TEXT, f"guard missing {formula}")
-
-    def test_reruns_on_mise_hash(self) -> None:
-        self.assertIn("config.toml.tmpl", self.TEXT)
-        self.assertIn("sha256sum", self.TEXT)
-
-    def test_darwin_only(self) -> None:
-        self.assertIn("Darwin", self.TEXT)
-
-    def test_warns_about_hidden_python(self) -> None:
-        self.assertIn("python@3.13", self.TEXT)
 
 
 class SyncScriptTest(unittest.TestCase):
@@ -204,6 +190,8 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         self.assertIn("Homebrew", text)
         self.assertIn("mise.run", text)
         self.assertIn("zinit", text)
+        self.assertIn("$(uname -m)", text)
+        self.assertNotIn("Homebrew (arm64)", text)
 
     def test_bootstrap_installs_nerd_fonts_linux(self) -> None:
         text = read("run_once_before_00-bootstrap.sh.tmpl")
