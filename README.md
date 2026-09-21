@@ -20,6 +20,8 @@ A superfast, modern development environment managed with [chezmoi](https://www.c
 | `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | All modern CLI tools |
 | `dot_config/ghostty/config` | `~/.config/ghostty/config` | Native GPU terminal config (Dracula theme) |
 | `dot_config/ide/keybindings.json` | `~/.config/ide/` | Shared keybindings (Cursor/VSCode/Windsurf) |
+| `dot_config/skills/*` | `~/.config/skills/` + symlinks | Personal skills → Cursor, Claude, Antigravity |
+| `dot_config/rules/*.mdc` | IDE rules dirs + globals | Commit/PR rules, work-gated (DXS) vs personal |
 
 # 🛠️ Installation (chezmoi-native, no install script)
 
@@ -39,6 +41,7 @@ chezmoi update -v
 3. `run_onchange_after_15-enforce-mise` removes brew duplicates of mise-owned tools (node, python, kubectl, gum, gh).
 4. `run_onchange_after_20-mise-install` runs `mise install` for all runtimes and Rust CLIs.
 5. IDE keybindings/keymaps deploy via `run_onchange_after_30-ide-keys` with timestamped backups.
+6. Agent skills + rules converge via `run_onchange_after_35-skills` (symlinks into Cursor, Claude, Antigravity) and `run_onchange_after_36-rules` (work-gated commit rules, personal otherwise).
 
 Profiles: shared base always applies. Work Mac gets `work.toml` (IntelliJ, AWS, MySQL). Personal Fedora gets `personal.toml`. See `docs/DECISION.md` before adding any new app.
 

@@ -44,3 +44,24 @@
 # except cargo:procs and cargo:tokei, which compile from source on first
 # install (arm64-safe). tealdeer is the single documented brew exception
 # until its mise arm64 binary exists.
+#
+# 6. Agent skills live in dot_config/skills/ (one folder per skill, SKILL.md
+#    with name+description frontmatter) and symlink into every IDE that reads
+#    the open skill standard: ~/.cursor/skills, ~/.claude/skills,
+#    ~/.gemini/config/skills + legacy ~/.gemini/antigravity/skills
+#    (Antigravity 2.x global discovery is flaky — both paths maximize hits).
+#    Future IDE? Append SKILL_TARGETS_EXTRA (env) — no script edit needed.
+#    Work skills are NEVER vendored: vcode-sdlc-* and the k8s-mysql symlink
+#    into ~/Programming/Intuit belong to the Intuit developer desktop app;
+#    plugin caches (devassist-plugins-registry, vcode-next, skills-cursor,
+#    cursor-public) stay manager-owned. The deploy script only touches
+#    symlinks pointing back at ~/.config/skills.
+#
+# 7. Agent rules live in dot_config/rules/*.mdc and are profile-gated like
+#    kubectl: is_work machines get commit-pr-jira (DXS/Jira), personal
+#    machines get personal-commits (same style, no Jira). Cursor keeps the
+#    .mdc; Claude gets a frontmatter-stripped command in
+#    ~/.claude/commands plus a managed block in ~/.claude/CLAUDE.md;
+#    Antigravity gets the same managed block in ~/.gemini/GEMINI.md
+#    (global scope — workspace .agents/rules stays per-repo by design).
+#    Rule bodies must stay under Antigravity's 12,000-char per-file cap.

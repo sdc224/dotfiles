@@ -143,6 +143,30 @@ class ChezmoiWorkProfileTest(unittest.TestCase):
         self.assertIn("DarculaCopy.xml", work)
         self.assertIn("skipping IntelliJ keymap", personal)
 
+    def test_skills_script_targets_all_ides(self) -> None:
+        for profile in ("work", "personal"):
+            out = render_script(profile, "run_onchange_after_35-skills.sh.tmpl")
+            for target in (
+                ".cursor/skills",
+                ".claude/skills",
+                ".gemini/config/skills",
+                ".gemini/antigravity/skills",
+            ):
+                self.assertIn(target, out, f"{profile}: missing {target}")
+            self.assertIn("vcode-sdlc-", out)
+            self.assertIn("k8s-mysql", out)
+
+    def test_rules_gated_per_profile(self) -> None:
+        work = render_script("work", "run_onchange_after_36-rules.sh.tmpl")
+        personal = render_script("personal", "run_onchange_after_36-rules.sh.tmpl")
+        self.assertIn('ACTIVE_RULE="commit-pr-jira"', work)
+        self.assertIn('ACTIVE_RULE="personal-commits"', personal)
+        for out in (work, personal):
+            self.assertIn(".cursor/rules", out)
+            self.assertIn(".claude/commands", out)
+            self.assertIn(".gemini/GEMINI.md", out)
+            self.assertIn("dotfiles-rules:start", out)
+
     def test_launchd_plist_renders_home(self) -> None:
         out = render("work", "Library/LaunchAgents/com.dotfiles.update.plist")
         self.assertIn("dotfiles-auto-update", out)
@@ -195,6 +219,176 @@ class DispatcherExecutionTest(unittest.TestCase):
             self.skipTest("dnf/flatpak dispatch branch needs Linux")
         calls = self._run_dispatcher("personal")
         self.assertIn("neovim", calls)
+
+
+class SkillsExecutionTest(unittest.TestCase):
+    """Execute the RENDERED skills script against a fake HOME."""
+
+    def _run_skills(
+        self, fake_home: pathlib.Path, *, extra_env: dict | None = None
+    ) -> subprocess.CompletedProcess:
+        rendered = render_script("work", "run_onchange_after_35-skills.sh.tmpl")
+        script = fake_home / "skills.sh"
+        script.write_text(rendered)
+        # Empty stub dir first on PATH: the script must resolve python-free
+        # POSIX tools only, and /usr/bin/python3 on macOS is an xcrun shim
+        # that must never shadow the test python.
+        bin_dir = fake_home / "bin"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        env = _base_env(bin_dir)
+        env["HOME"] = str(fake_home)
+        env["CHEZMOI_SOURCE_DIR"] = str(REPO)
+        if extra_env:
+            env.update(extra_env)
+        return subprocess.run(
+            ["bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+        )
+
+    def test_links_personal_skills_into_all_ides(self) -> None:
+        if CHEZMOI is None:
+            self.skipTest("chezmoi not available")
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-skills-"))
+        home = tmp / "home"
+        store = home / ".config/skills/split"
+        (store / "scripts").mkdir(parents=True)
+        (store / "SKILL.md").write_text("---\nname: split\n---\n# split\n")
+        proc = self._run_skills(home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        for dest in (
+            ".cursor/skills/split",
+            ".claude/skills/split",
+            ".gemini/config/skills/split",
+            ".gemini/antigravity/skills/split",
+        ):
+            link = home / dest
+            self.assertTrue(link.is_symlink(), f"not a symlink: {dest}")
+            self.assertEqual(
+                link.resolve(),
+                store.resolve(),
+                f"wrong target: {dest}",
+            )
+
+    def test_work_skills_and_stale_links(self) -> None:
+        if CHEZMOI is None:
+            self.skipTest("chezmoi not available")
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-skills-"))
+        home = tmp / "home"
+        store = home / ".config/skills/split"
+        store.mkdir(parents=True)
+        (store / "SKILL.md").write_text("---\nname: split\n---\n")
+        # Work-owned entries the script must never touch.
+        intuit_target = tmp / "intuit-sql-skill"
+        intuit_target.mkdir()
+        cursor_skills = home / ".cursor/skills"
+        cursor_skills.mkdir(parents=True)
+        (cursor_skills / "k8s-mysql").symlink_to(intuit_target)
+        (cursor_skills / "vcode-sdlc-build").mkdir()
+        # Stale dotfiles-managed symlink pruned; user file kept as backup.
+        (cursor_skills / "old-skill").symlink_to(home / ".config/skills/old-skill")
+        (cursor_skills / "split").mkdir()
+        (cursor_skills / "split" / "notes.txt").write_text("mine\n")
+        proc = self._run_skills(home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(
+            (cursor_skills / "k8s-mysql").resolve(), intuit_target.resolve()
+        )
+        self.assertTrue((cursor_skills / "vcode-sdlc-build").is_dir())
+        self.assertFalse((cursor_skills / "vcode-sdlc-build").is_symlink())
+        self.assertFalse((cursor_skills / "old-skill").exists())
+        backups = list(cursor_skills.glob("split.backup.*"))
+        self.assertEqual(len(backups), 1)
+        self.assertTrue((cursor_skills / "split").is_symlink())
+
+    def test_future_ide_via_extra_targets(self) -> None:
+        if CHEZMOI is None:
+            self.skipTest("chezmoi not available")
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-skills-"))
+        home = tmp / "home"
+        store = home / ".config/skills/split"
+        store.mkdir(parents=True)
+        (store / "SKILL.md").write_text("---\nname: split\n---\n")
+        proc = self._run_skills(
+            home, extra_env={"SKILL_TARGETS_EXTRA": str(home / ".future/skills")}
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertTrue((home / ".future/skills/split").is_symlink())
+
+
+class RulesExecutionTest(unittest.TestCase):
+    """Execute the RENDERED rules scripts against a fake HOME."""
+
+    def _run_rules(
+        self, profile: str, fake_home: pathlib.Path
+    ) -> subprocess.CompletedProcess:
+        rendered = render_script(profile, "run_onchange_after_36-rules.sh.tmpl")
+        script = fake_home / f"rules-{profile}.sh"
+        script.write_text(rendered)
+        # Empty stub dir first on PATH so the script's `python3` resolves
+        # to the test interpreter, never macOS's xcrun /usr/bin/python3 shim.
+        bin_dir = fake_home / "bin"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        env = _base_env(bin_dir)
+        env["HOME"] = str(fake_home)
+        env["CHEZMOI_SOURCE_DIR"] = str(REPO)
+        return subprocess.run(
+            ["bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+        )
+
+    def test_work_profile_deploys_jira_rule_everywhere(self) -> None:
+        if CHEZMOI is None:
+            self.skipTest("chezmoi not available")
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-rules-"))
+        home = tmp / "home"
+        (home / ".claude/CLAUDE.md").parent.mkdir(parents=True)
+        (home / ".claude/CLAUDE.md").write_text(
+            "# Global preferences\n\n## Git\n- Never add trailers.\n"
+        )
+        proc = self._run_rules("work", home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        mdc = home / ".cursor/rules/commit-pr-jira.mdc"
+        self.assertTrue(mdc.is_file())
+        self.assertIn("DXS", mdc.read_text())
+        cmd = home / ".claude/commands/commit-pr-jira.md"
+        self.assertTrue(cmd.is_file())
+        self.assertNotEqual(cmd.read_text().splitlines()[0], "---")
+        self.assertIn("Conventional Commits", cmd.read_text())
+        claude_global = home / ".claude/CLAUDE.md"
+        self.assertIn("Never add trailers.", claude_global.read_text())
+        self.assertIn("dotfiles-rules:start", claude_global.read_text())
+        self.assertIn("DXS", claude_global.read_text())
+        gemini_global = home / ".gemini/GEMINI.md"
+        self.assertIn("dotfiles-rules:start", gemini_global.read_text())
+        self.assertIn("DXS", gemini_global.read_text())
+        self.assertFalse((home / ".cursor/rules/personal-commits.mdc").exists())
+
+    def test_personal_profile_swaps_rule_and_cleans_work(self) -> None:
+        if CHEZMOI is None:
+            self.skipTest("chezmoi not available")
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-rules-"))
+        home = tmp / "home"
+        home.mkdir(parents=True)
+        proc = self._run_rules("work", home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        proc = self._run_rules("personal", home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertTrue((home / ".cursor/rules/personal-commits.mdc").is_file())
+        self.assertFalse((home / ".cursor/rules/commit-pr-jira.mdc").exists())
+        self.assertFalse((home / ".claude/commands/commit-pr-jira.md").exists())
+        claude_global = (home / ".claude/CLAUDE.md").read_text()
+        self.assertIn("No Jira key", claude_global)
+        self.assertNotIn("DXS", claude_global)
+        # Idempotent: second run changes nothing, no backups pile up.
+        proc = self._run_rules("personal", home)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(list(home.rglob("*.backup.*")), [])
 
 
 class SyncCheckTest(unittest.TestCase):
