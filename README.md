@@ -21,24 +21,35 @@ A superfast, modern development environment managed with [chezmoi](https://www.c
 | `dot_config/ghostty/config` | `~/.config/ghostty/config` | Native GPU terminal config (Dracula theme) |
 | `dot_config/ide/keybindings.json` | `~/.config/ide/` | Shared keybindings (Cursor/VSCode/Windsurf) |
 
-# 🛠️ Installation
+# 🛠️ Installation (chezmoi-native, no install script)
 
 ```bash
-# Clone the repo
-git clone <your-repo-url> ~/Programming/dotfiles
-cd ~/Programming/dotfiles
+# Fresh machine: bootstrap + converge in one command.
+# Prompts: Git name, email, is_work (defaults true on macOS, false on Linux),
+# and install_intellij (defaults true on macOS).
+chezmoi init --apply <your-repo-url>
 
-# Run the installer without changing permissions
-bash ./install.sh
+# Day-to-day: pull latest and converge (packages + mise + configs).
+chezmoi update -v
 ```
 
-**The installer will:**
-1. Detect your OS (Fedora, macOS, etc.).
-2. Install base dependencies (`zsh`, `git`, `curl`).
-3. **Fedora**: Automate VS Code installation via official RPM repo.
-4. **Fedora only**: Install Docker Engine, Docker Desktop, and Docker CLI tools separately from `mise`.
-5. Install `mise`, `chezmoi`, and `zinit`.
-6. Apply all dotfiles and download modern CLI tools.
+**How it converges (no `install.sh`):**
+1. `run_once_before_00-bootstrap` installs only Homebrew (Mac) or dnf basics (Fedora), mise, zinit, and Nerd Fonts.
+2. `run_onchange_after_10-install-packages` reads `dot_config/packages/shared.toml` plus `work.toml` (work) or `personal.toml` (personal) and installs via brew/cask (Mac), dnf/flatpak (Fedora), or winget (future Windows).
+3. `run_onchange_after_15-enforce-mise` removes brew duplicates of mise-owned tools (node, python, kubectl, gum, gh).
+4. `run_onchange_after_20-mise-install` runs `mise install` for all runtimes and Rust CLIs.
+5. IDE keybindings/keymaps deploy via `run_onchange_after_30-ide-keys` with timestamped backups.
+
+Profiles: shared base always applies. Work Mac gets `work.toml` (IntelliJ, AWS, MySQL). Personal Fedora gets `personal.toml`. See `docs/DECISION.md` before adding any new app.
+
+## 📄 Guides
+
+- `docs/MANUAL.md` — apps you install by hand (Intelligent Hub flow for work, Fedora checklist for personal) and how update results reach you
+- `docs/MDM.md` — company-provided apps that must never enter the manifests
+- `docs/FEDORA.md` — personal Fedora notes (COPR Ghostty, systemd timer, Docker)
+- `docs/DECISION.md` — where a new app goes (mise-first rule + banned list)
+- `docs/TESTING.md` — how to run the unit + integration suites
+- `docs/TEST_PLAN.md` — OS × profile integration matrix for every feature
 
 ## 🧠 What is Atuin?
 

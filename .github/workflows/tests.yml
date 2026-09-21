@@ -1,0 +1,94 @@
+name: Tests (unit + integration)
+
+on:
+  pull_request:
+    paths:
+      - "dot_config/**"
+      - "dot_local/**"
+      - "run_*.tmpl"
+      - "Library/**"
+      - ".chezmoi*"
+      - "docs/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/tests.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  unit:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install test deps
+        run: python -m pip install -r tests/requirements.txt
+      - name: Unit tests with coverage (tests/lib must stay 100%)
+        run: |
+          coverage run -m pytest tests/unit -q
+          coverage report --show-missing
+      - name: Stdlib runner smoke check (no pytest needed locally)
+        run: python -m unittest discover -s tests/unit
+
+  shell-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck and shfmt
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck shfmt
+      - name: shellcheck shipped scripts
+        run: shellcheck -S warning dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update
+      - name: shfmt formatting check (2-space indent, repo style)
+        run: shfmt -i 2 --diff dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update
+      # Template rendering (chezmoi execute-template / cat) is covered by
+      # the integration jobs, which run the real templates per profile.
+
+  integration-mac:
+    runs-on: macos-15 # arm64, matches the work fleet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install test deps
+        run: python -m pip install -r tests/requirements.txt
+      - name: Install chezmoi
+        run: brew install chezmoi
+      - name: Integration tests (work + personal profiles, stubbed brew)
+        run: python -m pytest tests/integration -q
+
+  integration-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install test deps
+        run: python -m pip install -r tests/requirements.txt
+      - name: Install chezmoi
+        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+      - name: Integration tests (work + personal profiles, stubbed dnf/flatpak)
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          python -m pytest tests/integration -q
+
+  integration-fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install python + chezmoi
+        run: |
+          dnf install -y python3-pip curl tar gzip
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+      - name: Install test deps
+        run: python3 -m pip install -r tests/requirements.txt
+      - name: Integration tests on real Fedora userland
+        run: python3 -m pytest tests/integration -q
