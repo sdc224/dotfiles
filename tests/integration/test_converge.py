@@ -236,7 +236,9 @@ class DispatcherExecutionTest(unittest.TestCase):
             f'echo "brew $*" >> "{log}"\n'
             'if [ "$1 $2" = "list --cask" ]; then exit 1; fi\nexit 0',
         )
-        rendered = render_script("personal", "run_onchange_after_10-install-packages.sh.tmpl")
+        rendered = render_script(
+            "personal", "run_onchange_after_10-install-packages.sh.tmpl"
+        )
         script = tmp / "dispatcher.sh"
         script.write_text(rendered)
         env = _base_env(bin_dir)
