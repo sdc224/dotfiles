@@ -153,7 +153,11 @@ class ChezmoiWorkProfileTest(unittest.TestCase):
             out = render_script(profile, "run_onchange_after_35-skills.sh.tmpl")
             for target in expected:
                 self.assertIn(target, out, f"{profile}: missing {target}")
-            unexpected = ".cursor/skills" if IS_LINUX else ".gemini/config/skills"
+            unexpected = (
+                '"$HOME/.cursor/skills"'
+                if IS_LINUX
+                else '"$HOME/.gemini/config/skills"'
+            )
             self.assertNotIn(unexpected, out)
             self.assertIn("vcode-sdlc-", out)
             self.assertIn("k8s-mysql", out)
@@ -340,7 +344,9 @@ class SkillsExecutionTest(unittest.TestCase):
         (cursor_skills / "old-skill").symlink_to(home / ".config/skills/old-skill")
         (cursor_skills / "split").mkdir()
         (cursor_skills / "split" / "notes.txt").write_text("mine\n")
-        proc = self._run_skills(home)
+        proc = self._run_skills(
+            home, extra_env={"SKILL_TARGETS": str(home / ".cursor/skills")}
+        )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(
             (cursor_skills / "k8s-mysql").resolve(), intuit_target.resolve()

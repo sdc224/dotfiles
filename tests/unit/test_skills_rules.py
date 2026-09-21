@@ -135,6 +135,7 @@ class RulesSourceTest(unittest.TestCase):
         self.assertIn("alwaysApply: true", text)
         self.assertIn("Conventional Commits", text)
 
+
 class RulesScriptTest(unittest.TestCase):
     TEXT = read("run_onchange_after_36-rules.sh.tmpl")
 
