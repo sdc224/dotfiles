@@ -98,6 +98,14 @@ class WorkProfileTest(unittest.TestCase):
         dnf = repo.manifest_entries(PERSONAL)["dnf"]
         self.assertIn("neovim", dnf)
         self.assertIn("distrobox", dnf)
+        for package in (
+            "docker-ce",
+            "docker-ce-cli",
+            "containerd.io",
+            "docker-buildx-plugin",
+            "docker-compose-plugin",
+        ):
+            self.assertIn(package, dnf)
 
     def test_work_and_personal_do_not_overlap(self) -> None:
         for backend in ("brew", "cask", "dnf", "flatpak", "winget"):

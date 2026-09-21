@@ -28,8 +28,10 @@ This file lists what cannot be automated and must be installed by hand.
 5. Sign into Firefox Sync, Slack (personal, if ever needed), and Zoom
    (only if you add them back to `personal.toml`; they are work tools
    and intentionally absent today).
-6. Docker Engine/Desktop on Fedora is intentionally not automated
-   (see [FEDORA.md](FEDORA.md)); install it by hand if you want it.
+6. Docker Engine, Compose, and Buildx are installed from Docker's official
+   DNF repository by the dispatcher. It also enables `docker.service`; run
+   Docker with `sudo` unless you deliberately add your user to the `docker`
+   group (which grants root-equivalent access).
 
 ## How update results reach you
 

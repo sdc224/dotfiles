@@ -1,5 +1,5 @@
 [Unit]
-Description=Weekly dotfiles auto-update (mise + flatpak, dnf notify-only)
+Description=Weekly dotfiles update (mise + flatpak; Fedora manages DNF)
 After=network-online.target
 
 [Service]

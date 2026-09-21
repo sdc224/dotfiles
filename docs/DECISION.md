@@ -14,6 +14,9 @@
 #    Examples: ghostty, vscode, cursor, windsurf, fonts, postman,
 #    intellij-idea (work only), docker CLI, duti.
 #    (slack, zoom, rancher-desktop are MDM-provided, never in manifests.)
+#    Docker Engine is a Fedora-only exception: its daemon, container runtime,
+#    and matching CLI require DNF packages plus a system service. Do not split
+#    its CLI into mise and its daemon into DNF.
 #
 # 3. Not in mise and not GUI? Is it a brew-only formula with no mise backend?
 #    Examples today: awscli, protobuf, tealdeer (arm64 gap), mysql (work).
