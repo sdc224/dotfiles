@@ -22,10 +22,13 @@ ACTIVE_RULE="personal-commits"
 INACTIVE_RULE="commit-pr-jira"
 {{ end -}}
 
+{{ if eq .chezmoi.os "linux" -}}
+GEMINI_GLOBAL="$HOME/.gemini/GEMINI.md"
+{{ else -}}
 CURSOR_RULES="$HOME/.cursor/rules"
 CLAUDE_COMMANDS="$HOME/.claude/commands"
 CLAUDE_GLOBAL="$HOME/.claude/CLAUDE.md"
-GEMINI_GLOBAL="$HOME/.gemini/GEMINI.md"
+{{ end -}}
 
 # Content compare that works without diffutils (fedora:latest containers
 # ship coreutils but not cmp; a missing cmp would spuriously backup).
@@ -47,8 +50,8 @@ deploy_mdc() {
   echo "rules: $name -> $dest_dir"
 }
 
-# Claude commands and Antigravity globals are plain markdown: the Cursor
-# .mdc frontmatter (description/alwaysApply) is stripped on the way out.
+# Non-Cursor rule targets are plain markdown: the Cursor .mdc frontmatter
+# (description/alwaysApply) is stripped on the way out.
 strip_frontmatter() {
   awk 'NR==1 && $0=="---" {in_fm=1; next} in_fm && $0=="---" {in_fm=0; next} !in_fm' "$1" > "$2"
 }
@@ -87,6 +90,13 @@ remove_if_present() {
   fi
 }
 
+{{ if eq .chezmoi.os "linux" -}}
+# Fedora: Antigravity's global rule file is the only rule target.
+TMP_BODY="$(mktemp)"
+trap 'rm -f "$TMP_BODY"' EXIT
+strip_frontmatter "$SRC/$ACTIVE_RULE.mdc" "$TMP_BODY"
+ensure_block "$GEMINI_GLOBAL" "<!-- dotfiles-rules:start -->" "<!-- dotfiles-rules:end -->" "$TMP_BODY"
+{{ else -}}
 # 1. Cursor keeps the .mdc (frontmatter intact).
 deploy_mdc "$SRC/$ACTIVE_RULE.mdc" "$CURSOR_RULES" "$ACTIVE_RULE.mdc"
 remove_if_present "$CURSOR_RULES/$INACTIVE_RULE.mdc"
@@ -100,8 +110,4 @@ cp "$TMP_BODY" "$CLAUDE_COMMANDS/$ACTIVE_RULE.md"
 echo "rules: $ACTIVE_RULE.md -> $CLAUDE_COMMANDS"
 remove_if_present "$CLAUDE_COMMANDS/$INACTIVE_RULE.md"
 ensure_block "$CLAUDE_GLOBAL" "<!-- dotfiles-rules:start -->" "<!-- dotfiles-rules:end -->" "$TMP_BODY"
-
-# 3. Antigravity: global rules live in ~/.gemini/GEMINI.md (single file,
-# 12k-char limit per rule — both rule bodies are ~2k). Workspace
-# .agents/rules is per-repo by design, so home dotfiles stay global-only.
-ensure_block "$GEMINI_GLOBAL" "<!-- dotfiles-rules:start -->" "<!-- dotfiles-rules:end -->" "$TMP_BODY"
+{{ end -}}

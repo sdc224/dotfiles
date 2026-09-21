@@ -41,10 +41,11 @@ The same flow on every OS. Profile (`is_work`) and OS backends are chosen at ini
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/sdc224/dotfiles.git
 ```
 
-The command installs Chezmoi, then applies this repository. Its first hook
-installs the missing platform tools: Homebrew on macOS, or OS packages via
-dnf/apt on Linux. The Homebrew installer detects the current CPU itself:
-Apple Silicon uses `/opt/homebrew`; Intel uses `/usr/local`.
+The command installs Chezmoi and clones/applies this repository automatically;
+you do not clone it separately. Its first hook installs the missing platform
+tools: Homebrew on macOS, or OS packages via dnf/apt on Linux. The Homebrew
+installer detects the current CPU itself: Apple Silicon uses `/opt/homebrew`;
+Intel uses `/usr/local`.
 
 Prompts:
 
@@ -55,6 +56,9 @@ Prompts:
 | `install_intellij` | Whether to deploy IntelliJ keymap / related bits independent of profile |
 
 Then verify:
+
+Open a new terminal first so the managed `.zprofile` adds `~/.local/bin` to
+`PATH`, then run:
 
 ```bash
 dotfiles-doctor
@@ -84,7 +88,7 @@ OS-specific notes (Ghostty COPR, launchd vs systemd, Docker stance, …) stay in
 | on change | `run_onchange_after_10-install-packages` | Merges `shared.toml` + `work.toml` *or* `personal.toml`, then installs via the **OS backend** that matches the host |
 | on change | `run_onchange_after_20-mise-install` | `mise install` for runtimes + Rust CLIs |
 | on change | `run_onchange_after_30-ide-keys` | Deploys Ctrl-first keybindings to VS Code / Cursor / Windsurf (+ IntelliJ keymap when gated) |
-| on change | `run_onchange_after_35-skills` | Symlinks personal skills into Cursor, Claude, Antigravity |
+| on change | `run_onchange_after_35-skills` | Symlinks personal skills into the host OS’s agent IDEs |
 | on change | `run_onchange_after_36-rules` | Deploys work (`commit-pr-jira`) or personal (`personal-commits`) agent rules |
 | once | `run_once_after_40-enable-schedulers` | Weekly auto-update (host scheduler: launchd, systemd, …) |
 
@@ -276,11 +280,12 @@ Source of truth: `dot_config/ide/keybindings.json`.
 
 ### Personal skills
 
-Canonical store: `dot_config/skills/<name>/SKILL.md` → deployed to `~/.config/skills/`, then symlinked into:
+Canonical store: `dot_config/skills/<name>/SKILL.md` → deployed to
+`~/.config/skills/`, then symlinked into the host OS’s agent IDE:
 
-- `~/.cursor/skills`
-- `~/.claude/skills`
-- `~/.gemini/config/skills` and legacy `~/.gemini/antigravity/skills`
+- macOS: `~/.cursor/skills` and `~/.claude/skills`
+- Fedora: `~/.gemini/config/skills` and legacy
+  `~/.gemini/antigravity/skills` (Antigravity only)
 
 | Skill | Purpose |
 |---|---|
@@ -296,10 +301,10 @@ Policy detail: [`docs/DECISION.md`](docs/DECISION.md) §6.
 
 | Profile | Rule | Deployed to |
 |---|---|---|
-| Work | `dot_config/rules/commit-pr-jira.mdc` | Cursor `.mdc`; Claude command + `CLAUDE.md` block; Antigravity `GEMINI.md` block |
-| Personal | `dot_config/rules/personal-commits.mdc` | Same targets; Conventional Commits style **without** Jira |
+| Work | `dot_config/rules/commit-pr-jira.mdc` | macOS: Cursor `.mdc` + Claude command/block; Fedora: Antigravity `GEMINI.md` block |
+| Personal | `dot_config/rules/personal-commits.mdc` | Same OS-specific targets; Conventional Commits style **without** Jira |
 
-Inactive rule is removed on converge. Bodies must stay under Antigravity’s 12k-char per-file cap.
+Inactive rule is removed on converge.
 
 ---
 
@@ -432,6 +437,6 @@ Then push, and on each machine: `chezmoi update -v`. Manifest hashes re-trigger 
 | `dot_config/atuin/config.toml` | `~/.config/atuin/config.toml` | History DB UI |
 | `dot_config/ide/keybindings.json` | IDE User dirs | Ctrl-first keys |
 | `dot_config/skills/*` | `~/.config/skills` + IDE symlinks | Personal agent skills |
-| `dot_config/rules/*.mdc` | Cursor / Claude / Gemini | Profile-gated commit rules |
+| `dot_config/rules/*.mdc` | macOS Cursor/Claude; Fedora Antigravity | Profile-gated commit rules |
 | `dot_config/packages/*.toml` | (via dispatcher) | System packages by profile + OS backend |
 | `dot_local/bin/dotfiles-*` | `~/.local/bin/` | Doctor, sync, auto-update |

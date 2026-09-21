@@ -143,16 +143,22 @@ class ChezmoiWorkProfileTest(unittest.TestCase):
         self.assertIn("DarculaCopy.xml", work)
         self.assertIn("skipping IntelliJ keymap", personal)
 
-    def test_skills_script_targets_all_ides(self) -> None:
+    def test_skills_script_targets_ide_for_host_os(self) -> None:
+        expected = (
+            (".gemini/config/skills", ".gemini/antigravity/skills")
+            if IS_LINUX
+            else (".cursor/skills", ".claude/skills")
+        )
         for profile in ("work", "personal"):
             out = render_script(profile, "run_onchange_after_35-skills.sh.tmpl")
-            for target in (
-                ".cursor/skills",
-                ".claude/skills",
-                ".gemini/config/skills",
-                ".gemini/antigravity/skills",
-            ):
+            for target in expected:
                 self.assertIn(target, out, f"{profile}: missing {target}")
+            unexpected = (
+                '"$HOME/.cursor/skills"'
+                if IS_LINUX
+                else '"$HOME/.gemini/config/skills"'
+            )
+            self.assertNotIn(unexpected, out)
             self.assertIn("vcode-sdlc-", out)
             self.assertIn("k8s-mysql", out)
 
@@ -162,9 +168,13 @@ class ChezmoiWorkProfileTest(unittest.TestCase):
         self.assertIn('ACTIVE_RULE="commit-pr-jira"', work)
         self.assertIn('ACTIVE_RULE="personal-commits"', personal)
         for out in (work, personal):
-            self.assertIn(".cursor/rules", out)
-            self.assertIn(".claude/commands", out)
-            self.assertIn(".gemini/GEMINI.md", out)
+            if IS_LINUX:
+                self.assertIn(".gemini/GEMINI.md", out)
+                self.assertNotIn(".cursor/rules", out)
+            else:
+                self.assertIn(".cursor/rules", out)
+                self.assertIn(".claude/commands", out)
+                self.assertNotIn(".gemini/", out)
             self.assertIn("dotfiles-rules:start", out)
 
     def test_launchd_plist_renders_home(self) -> None:
@@ -291,7 +301,7 @@ class SkillsExecutionTest(unittest.TestCase):
             env=env,
         )
 
-    def test_links_personal_skills_into_all_ides(self) -> None:
+    def test_links_personal_skills_into_ide_for_host_os(self) -> None:
         if CHEZMOI is None:
             self.skipTest("chezmoi not available")
         tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-skills-"))
@@ -301,12 +311,12 @@ class SkillsExecutionTest(unittest.TestCase):
         (store / "SKILL.md").write_text("---\nname: split\n---\n# split\n")
         proc = self._run_skills(home)
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        for dest in (
-            ".cursor/skills/split",
-            ".claude/skills/split",
-            ".gemini/config/skills/split",
-            ".gemini/antigravity/skills/split",
-        ):
+        destinations = (
+            (".gemini/config/skills/split", ".gemini/antigravity/skills/split")
+            if IS_LINUX
+            else (".cursor/skills/split", ".claude/skills/split")
+        )
+        for dest in destinations:
             link = home / dest
             self.assertTrue(link.is_symlink(), f"not a symlink: {dest}")
             self.assertEqual(
@@ -334,7 +344,9 @@ class SkillsExecutionTest(unittest.TestCase):
         (cursor_skills / "old-skill").symlink_to(home / ".config/skills/old-skill")
         (cursor_skills / "split").mkdir()
         (cursor_skills / "split" / "notes.txt").write_text("mine\n")
-        proc = self._run_skills(home)
+        proc = self._run_skills(
+            home, extra_env={"SKILL_TARGETS": str(home / ".cursor/skills")}
+        )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(
             (cursor_skills / "k8s-mysql").resolve(), intuit_target.resolve()
@@ -396,6 +408,11 @@ class RulesExecutionTest(unittest.TestCase):
         )
         proc = self._run_rules("work", home)
         self.assertEqual(proc.returncode, 0, proc.stderr)
+        if IS_LINUX:
+            gemini_global = home / ".gemini/GEMINI.md"
+            self.assertIn("dotfiles-rules:start", gemini_global.read_text())
+            self.assertIn("DXS", gemini_global.read_text())
+            return
         mdc = home / ".cursor/rules/commit-pr-jira.mdc"
         self.assertTrue(mdc.is_file())
         self.assertIn("DXS", mdc.read_text())
@@ -407,9 +424,7 @@ class RulesExecutionTest(unittest.TestCase):
         self.assertIn("Never add trailers.", claude_global.read_text())
         self.assertIn("dotfiles-rules:start", claude_global.read_text())
         self.assertIn("DXS", claude_global.read_text())
-        gemini_global = home / ".gemini/GEMINI.md"
-        self.assertIn("dotfiles-rules:start", gemini_global.read_text())
-        self.assertIn("DXS", gemini_global.read_text())
+        self.assertFalse((home / ".gemini").exists())
         self.assertFalse((home / ".cursor/rules/personal-commits.mdc").exists())
 
     def test_personal_profile_swaps_rule_and_cleans_work(self) -> None:
@@ -422,6 +437,11 @@ class RulesExecutionTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         proc = self._run_rules("personal", home)
         self.assertEqual(proc.returncode, 0, proc.stderr)
+        if IS_LINUX:
+            gemini_global = (home / ".gemini/GEMINI.md").read_text()
+            self.assertIn("No Jira key", gemini_global)
+            self.assertNotIn("DXS", gemini_global)
+            return
         self.assertTrue((home / ".cursor/rules/personal-commits.mdc").is_file())
         self.assertFalse((home / ".cursor/rules/commit-pr-jira.mdc").exists())
         self.assertFalse((home / ".claude/commands/commit-pr-jira.md").exists())
