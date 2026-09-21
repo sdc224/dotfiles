@@ -6,7 +6,6 @@ the policy surface (mise-first, profile merge, transitive-dep ban) and
 CI can measure coverage on this file. Keep in sync with:
   - docs/DECISION.md
   - run_onchange_after_10-install-packages.sh.tmpl (PLAN builder)
-  - run_onchange_after_15-enforce-mise.sh.tmpl (BANNED_FORMULAE)
   - dotfiles-sync (transitive allowlist)
 """
 
@@ -67,17 +66,6 @@ TRANSITIVE_BREW_DEPS = frozenset(
         "zlib-ng-compat",
         "zstd",
     }
-)
-
-# Formulae the enforce-mise guard actively uninstalls (brew copies owned
-# by mise). Mirrors BANNED_FORMULAE in run_onchange_after_15-enforce-mise.
-GUARD_BANNED_FORMULAE = (
-    "node",
-    "python@3.13",
-    "python@3.12",
-    "python@3.11",
-    "kubernetes-cli",
-    "gum",
 )
 
 BACKEND_SECTIONS = (

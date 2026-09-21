@@ -27,8 +27,8 @@
 #    - Never list transitive brew deps (openssl, sqlite, icu4c, xz, zstd, ...).
 #      Brew resolves them. Listing them freezes upgrades and breaks `brew bundle`.
 #    - Never add node / python / java / kubectl / gum / gh via brew, dnf, or
-#      winget. The guard script (run_onchange_after_15-enforce-mise) uninstalls
-#      them and CI (manifest-lint) fails the PR.
+#      winget. CI (manifest-lint) fails the PR; existing system copies are
+#      left untouched and may be removed manually when you choose.
 #    - Never `brew install` / `dnf install` / `flatpak install` by hand without
 #      running dotfiles-sync afterwards. It reports EXTRA-BREW / EXTRA-FLATPAK
 #      drift and opens the reconciling PR.
@@ -38,7 +38,7 @@
 #    shared, delete the gate (one-line PR); the embedded hashes re-trigger
 #    install everywhere. See docs/MANUAL.md for the kubectl-on-Fedora example.
 #
-# Banned backends (enforced by guard + CI):
+# Banned backends (enforced by CI):
 #   node, python, python@3.13, java, kubectl, kubernetes-cli, gum, gh
 #   must resolve to backend=mise. Brew python as a hidden dependency of
 #   awscli/mysql is fine because it is never declared in a manifest.

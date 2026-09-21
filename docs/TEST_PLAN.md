@@ -26,21 +26,13 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | work profile installs awscli/mysql/intellij-idea | ✅ | n/a | auto |
 | personal profile installs neovim/distrobox, no work pkgs | ✅/n/a | ✅ | auto + ci-only |
 | shared casks land on mac (ghostty/vscode/cursor) | ✅ | n/a | auto |
-| iterm2 removed (Ghostty-only policy) | ✅ | n/a | unit (string) + manual |
+| existing unmanaged app/font skips the cask download | ✅ | n/a | unit + manual |
 | COPR ghostty on Fedora | n/a | ✅ | unit (string) + ci-only |
 | flathub remote ensured, flatpak installs | n/a | ✅ | unit + ci-only |
 | empty backend list never fails (`grep`/`pipefail`) | ✅ | ✅ | auto (regression) |
 | manifest hash re-triggers on edit | ✅ | ✅ | unit (hash lines) |
 
-## 3. mise-first guard (`run_onchange_after_15`)
-
-| Case | macOS | Fedora | Status |
-|---|---|---|---|
-| brew node/python/kubectl/gum copies removed | ✅ | n/a | unit + manual |
-| hidden brew python only warns (awscli/mysql dep) | ✅ | n/a | unit |
-| no-op on Linux | n/a | ✅ | unit (Darwin gate) + ci-only |
-
-## 4. mise install (`run_onchange_after_20`)
+## 3. mise install (`run_onchange_after_20`)
 
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
@@ -48,7 +40,7 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | kubectl present iff work | ✅ | ✅ | auto (render) |
 | full tool list resolves upstream | ✅ | ✅ | ci-only (`mise outdated` in audit workflow) |
 
-## 5. IDE keys (`run_onchange_after_30`)
+## 4. IDE keys (`run_onchange_after_30`)
 
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
@@ -56,7 +48,7 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | IntelliJ keymap iff work or `install_intellij` | ✅ | ✅ | auto (render) |
 | personal without flag skips IntelliJ | ✅ | ✅ | auto (render) |
 
-## 6. Schedulers (`run_once_after_40` + units)
+## 5. Schedulers (`run_once_after_40` + units)
 
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
@@ -65,7 +57,7 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | staleness guard: fresh run skips, `--force` runs | ✅ | ✅ | auto |
 | status file + toast written | ✅ | ✅ | auto (file), manual (toast seen) |
 
-## 7. Drift + auto-update (`dotfiles-sync`, `dotfiles-auto-update`)
+## 6. Drift + auto-update (`dotfiles-sync`, `dotfiles-auto-update`)
 
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
@@ -77,7 +69,7 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | DNF updates owned by Fedora OS scheduler (user timer reports only) | n/a | ✅ | unit + auto |
 | Docker DNF repository + Engine service enabled on personal Fedora | n/a | ✅ | auto (stubs) + ci-only |
 
-## 8. Doctor (`dotfiles-doctor`: verify, invoke modules, read logs)
+## 7. Doctor (`dotfiles-doctor`: verify, invoke modules, read logs)
 
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
@@ -91,7 +83,7 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | destructive choices only behind TTY prompts | ✅ | ✅ | unit (code scan) |
 | shellcheck + shfmt clean | ✅ | ✅ | ci-only (lint job) |
 
-## 9. Work-profile assumptions (cross-cutting)
+## 8. Work-profile assumptions (cross-cutting)
 | Assumption | Covered by |
 |---|---|
 | IntelliJ/AWS/MySQL never install on personal | auto (`DispatcherExecutionTest`, render) |
