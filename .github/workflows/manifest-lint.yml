@@ -5,7 +5,6 @@ on:
     paths:
       - "dot_config/packages/*.toml"
       - "dot_config/mise/config.toml.tmpl"
-      - "run_onchange_after_15-enforce-mise.sh.tmpl"
   push:
     branches: [main]
 

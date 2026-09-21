@@ -16,9 +16,8 @@ verified against MDM after `chezmoi apply`.
 - Rancher Desktop (work-provided daemon backing the brew `docker` CLI)
 - Slack (work workspace via Intelligent Hub, not brew)
 - Zoom (work-licensed via Intelligent Hub, not brew)
-- Microsoft Edge / Excel / Outlook (company-licensed; personal alternatives are
-  Firefox / Chrome in shared.toml)
-- eiamcli, gnupg tooling pushed to the brew Cellar by IT (left untouched by
-  the mise guard script)
+- Microsoft Edge / Excel / Outlook / Firefox / Chrome (company-provided;
+  browsers are intentionally absent from package manifests)
+- eiamcli, gnupg tooling pushed to the brew Cellar by IT
 
 If IT renames or adds an agent, update this file in the same PR.

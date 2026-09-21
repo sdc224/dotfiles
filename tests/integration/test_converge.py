@@ -221,6 +221,32 @@ class DispatcherExecutionTest(unittest.TestCase):
         self.assertNotIn("awscli", calls)
         self.assertNotIn("intellij-idea", calls)
 
+    def test_existing_unmanaged_cask_app_skips_download(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("cask dispatch branch needs macOS")
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-disp-cask-"))
+        bin_dir = tmp / "bin"
+        bin_dir.mkdir()
+        log = tmp / "calls.log"
+        home = tmp / "home"
+        (home / "Applications/Cursor.app").mkdir(parents=True)
+        write_stub(
+            bin_dir,
+            "brew",
+            f'echo "brew $*" >> "{log}"\n'
+            'if [ "$1 $2" = "list --cask" ]; then exit 1; fi\nexit 0',
+        )
+        rendered = render_script("personal", "run_onchange_after_10-install-packages.sh.tmpl")
+        script = tmp / "dispatcher.sh"
+        script.write_text(rendered)
+        env = _base_env(bin_dir)
+        env.update(CHEZMOI_SOURCE_DIR=str(REPO), HOME=str(home))
+        proc = subprocess.run(
+            ["bash", str(script)], capture_output=True, text=True, timeout=120, env=env
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertNotIn("install --cask cursor", log.read_text())
+
     def test_fedora_dispatches_dnf_packages(self) -> None:
         if not IS_LINUX:
             self.skipTest("dnf/flatpak dispatch branch needs Linux")
@@ -419,13 +445,13 @@ class SyncCheckTest(unittest.TestCase):
             "brew",
             f'if [ "$1 $2" = "list --formula" ]; then printf "{brews}\\n"; exit 0; fi\n'
             'if [ "$1 $2" = "list --cask" ]; then printf "ghostty\\nvisual-studio-code\\ncursor\\nwindsurf\\n'
-            "font-jetbrains-mono-nerd-font\\nfont-meslo-lg-nerd-font\\nfirefox\\ngoogle-chrome\\n"
+            "font-jetbrains-mono-nerd-font\\nfont-meslo-lg-nerd-font\\n"
             'intellij-idea\\njetbrains-toolbox\\npostman\\n"; exit 0; fi\nexit 0',
         )
         write_stub(
             bin_dir,
             "flatpak",
-            'if [ "$1" = "list" ]; then printf "Application\\norg.mozilla.firefox\\n'
+            'if [ "$1" = "list" ]; then printf "Application\\n'
             f'{extra_flatpak}"; exit 0; fi\nexit 0',
         )
         write_stub(bin_dir, "mise", 'if [ "$1" = "outdated" ]; then exit 0; fi\nexit 0')
