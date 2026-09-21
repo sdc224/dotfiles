@@ -26,7 +26,7 @@ bottom = "latest"
 atuin = "latest"
 # Version managers / cross-platform CLIs: if mise can install it, it lives HERE.
 # Never duplicate these in generic package manifests (see docs/DECISION.md).
-# Guard script run_onchange_after_15-enforce-mise removes brew copies.
+# Existing system copies are left alone; remove them manually when desired.
 gh = "latest"
 {{ if .is_work -}}
 kubectl = "latest"      # WORK ONLY: not installed on personal machines

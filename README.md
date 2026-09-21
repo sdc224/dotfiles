@@ -28,16 +28,23 @@ Supported today: **macOS** and **Linux** (Fedora is the reference Linux). Packag
 
 The same flow on every OS. Profile (`is_work`) and OS backends are chosen at init / by the dispatcher — you do not pick a “Mac path” vs “Linux path” in the repo.
 
-### Before chezmoi (when applicable)
+### Before bootstrap
 
 - **Work machines with MDM:** install company-provided apps from the portal first. Never put those in package manifests — list them in [`docs/MDM.md`](docs/MDM.md). OS-specific checklists live in [`docs/MANUAL.md`](docs/MANUAL.md).
 - **Personal / unmanaged hosts:** finish base OS setup (updates, package repos) once, then bootstrap.
+- **Minimum prerequisite:** `curl` and internet access. You do not need
+  Homebrew, Git, mise, or a preinstalled Chezmoi binary.
 
 ### Bootstrap
 
 ```bash
-chezmoi init --apply <your-repo-url>
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/sdc224/dotfiles.git
 ```
+
+The command installs Chezmoi, then applies this repository. Its first hook
+installs the missing platform tools: Homebrew on macOS, or OS packages via
+dnf/apt on Linux. The Homebrew installer detects the current CPU itself:
+Apple Silicon uses `/opt/homebrew`; Intel uses `/usr/local`.
 
 Prompts:
 
@@ -75,7 +82,6 @@ OS-specific notes (Ghostty COPR, launchd vs systemd, Docker stance, …) stay in
 |---|---|---|
 | once | `run_once_before_00-bootstrap` | Host bootstrap (package manager primitives, mise, zinit, Nerd Fonts) |
 | on change | `run_onchange_after_10-install-packages` | Merges `shared.toml` + `work.toml` *or* `personal.toml`, then installs via the **OS backend** that matches the host |
-| on change | `run_onchange_after_15-enforce-mise` | Removes system-package copies of mise-owned tools (node, python, kubectl, gum, gh, …) |
 | on change | `run_onchange_after_20-mise-install` | `mise install` for runtimes + Rust CLIs |
 | on change | `run_onchange_after_30-ide-keys` | Deploys Ctrl-first keybindings to VS Code / Cursor / Windsurf (+ IntelliJ keymap when gated) |
 | on change | `run_onchange_after_35-skills` | Symlinks personal skills into Cursor, Claude, Antigravity |

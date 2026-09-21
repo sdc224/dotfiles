@@ -22,8 +22,8 @@ casks = [
   "windsurf",
   "font-jetbrains-mono-nerd-font",
   "font-meslo-lg-nerd-font",
-  "firefox",
-  "google-chrome",
+  # Browsers are delivered by Intelligent Hub on work machines. Keep them
+  # outside dotfiles so setup neither requests elevation nor replaces MDM apps.
 ]
 
 [dnf]
@@ -37,9 +37,7 @@ packages = [
 # auth waits until `mise install` provides gh.
 
 [flatpak]
-packages = [
-  "org.mozilla.firefox",
-]
+packages = []
 
 [winget]
 packages = [

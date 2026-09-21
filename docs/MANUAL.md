@@ -12,7 +12,8 @@ This file lists what cannot be automated and must be installed by hand.
    Falcon, CyberArk EPM, DisplayLink, EON, UNIXi Security.
 3. Sign into Slack (work workspace) and Zoom (work SSO).
 4. Start Rancher Desktop once so the `docker` CLI from brew has a daemon.
-5. Run `chezmoi init --apply <repo-url>` (answer `is_work = yes`).
+5. Bootstrap the repo (answer `is_work = yes`): `sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/sdc224/dotfiles.git`
+   This installs Chezmoi first; its first hook installs Homebrew if needed.
 6. Verify: `dotfiles-sync --check` should report clean; anything it flags
    as EXTRA-BREW either belongs in `work.toml` or in [MDM.md](MDM.md).
 
@@ -24,7 +25,7 @@ This file lists what cannot be automated and must be installed by hand.
    normally handles Ghostty via COPR; see [FEDORA.md](FEDORA.md)).
 3. Firmware/drivers that dnf cannot own (e.g. Lenovo/ThinkPad firmware
    via GNOME Firmware, Bluetooth/Wi-Fi quirks) stay manual.
-4. Run `chezmoi init --apply <repo-url>` (answer `is_work = no`).
+4. Bootstrap the repo (answer `is_work = no`): `sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/sdc224/dotfiles.git`
 5. Sign into Firefox Sync, Slack (personal, if ever needed), and Zoom
    (only if you add them back to `personal.toml`; they are work tools
    and intentionally absent today).
