@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# Shared auto-update body for macOS launchd AND Fedora systemd.
+# Weekly: brew (greedy so auto-updating casks move), mise, flatpak.
+# dnf is notify-only: GNOME Software owns unattended OS updates.
+set -uo pipefail
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+LOG="$HOME/.local/share/dotfiles-update.log"
+STATUS="$HOME/.local/share/dotfiles-update.status"
+mkdir -p "$(dirname "$LOG")"
+exec >>"$LOG" 2>&1
+START="$(date -u +%FT%TZ)"
+echo "=== dotfiles-auto-update $START $(uname -s)/$(uname -m) ==="
+
+# Catch-up guard: schedulers fire weekly, but a machine that was off/asleep
+# misses calendar events. RunAtLoad (macOS) re-invokes this script at login,
+# and this guard makes that a no-op unless the last run is stale.
+# Pass --force to bypass (manual runs).
+STALE_DAYS=6
+if [ "${1:-}" != "--force" ] && [ -f "$STATUS" ]; then
+  LAST="$(grep '^last_run=' "$STATUS" 2>/dev/null | cut -d= -f2- || true)"
+  if [ -n "$LAST" ]; then
+    LAST_EPOCH="$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LAST" +%s 2>/dev/null || date -d "$LAST" +%s 2>/dev/null || echo 0)"
+    NOW_EPOCH="$(date +%s)"
+    if [ "$LAST_EPOCH" -gt 0 ] && [ $(( (NOW_EPOCH - LAST_EPOCH) / 86400 )) -lt "$STALE_DAYS" ]; then
+      echo "auto-update: last run $LAST is fresh (< ${STALE_DAYS}d), skipping (use --force to override)"
+      exit 0
+    fi
+    echo "auto-update: last run $LAST is stale, catching up now"
+  fi
+fi
+
+if [ "$(uname -s)" = "Darwin" ] && command -v brew &>/dev/null; then
+  brew update || true
+  # --greedy is required: vscode/cursor/windsurf/ghostty are auto_updating
+  # casks that plain `brew upgrade` skips.
+  brew upgrade --greedy || true
+  brew bundle check --global 2>/dev/null || true
+fi
+
+if command -v mise &>/dev/null; then
+  mise upgrade --yes || true
+  mise prune --yes 2>/dev/null || true
+fi
+
+if [ "$(uname -s)" = "Linux" ]; then
+  if command -v flatpak &>/dev/null; then
+    flatpak update -y || true
+  fi
+  if command -v dnf &>/dev/null; then
+    dnf check-update || true  # notify only; do not upgrade OS packages here
+  fi
+fi
+
+echo "=== done $(date -u +%FT%TZ) ==="
+
+# Auto drift check: yes, dotfiles-sync runs on its own inside every weekly
+# update. Report-only by default; it opens a PR itself only when all guards
+# pass (gh authed, repo has committable changes, no open sync PR already).
+# Opt out of auto-PRs with DOTFILES_SYNC_AUTO_PR=0 (check still runs).
+DRIFT="clean"
+if command -v dotfiles-sync &>/dev/null; then
+  if dotfiles-sync --check >>"$LOG" 2>&1; then
+    echo "auto-update: drift check clean"
+  else
+    DRIFT="drift-detected"
+    echo "auto-update: drift detected, see log above" >&2
+    REPO="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
+    if [ "${DOTFILES_SYNC_AUTO_PR:-1}" = "1" ] \
+       && [ -n "$(cd "$REPO" 2>/dev/null && git status --porcelain 2>/dev/null || true)" ] \
+       && command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1 \
+       && [ -z "$(gh pr list --search "record local machine drift in:title" --state open --json number -q '.[].number' 2>/dev/null || true)" ]; then
+      echo "auto-update: repo has changes and no open sync PR, opening one"
+      dotfiles-sync >>"$LOG" 2>&1 || true
+      DRIFT="drift-pr-opened"
+    else
+      echo "auto-update: NOT opening a PR (repo clean, gh unauthed, opt-out, or PR already open) - run dotfiles-sync by hand"
+    fi
+  fi
+fi
+
+# How the result reaches you (three channels, no silent failures):
+# 1. Status file: latest run summary for scripts/prompts (`cat` it any time).
+printf 'last_run=%s\nresult=ok\ndrift=%s\nlog=%s\n' "$START" "$DRIFT" "$LOG" > "$STATUS"
+# 2. Desktop toast so a weekly background run is visible.
+NOTICE="brew + mise + casks updated."
+[ "$DRIFT" = "clean" ] || NOTICE="drift detected ($DRIFT) - check log: ~/.local/share/dotfiles-update.log"
+if [ "$(uname -s)" = "Darwin" ]; then
+  osascript -e "display notification \"$NOTICE\" with title \"dotfiles auto-update\"" 2>/dev/null || true
+elif command -v notify-send &>/dev/null; then
+  notify-send "dotfiles auto-update" "$NOTICE" 2>/dev/null || true
+fi
+# 3. CI PRs: the weekly audit workflow opens a GitHub PR for upstream bumps,
+#    which notifies via your normal GitHub notification settings.

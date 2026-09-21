@@ -143,3 +143,11 @@ fi
 # Silences 'command not found: dump_zsh_state' when their
 # shell integration script fails to fully load.
 (( ${+functions[dump_zsh_state]} )) || function dump_zsh_state() { :; }
+
+# Local overrides (unmanaged): machine-specific shell bits go in ~/.zsh_local,
+# never in ~/.zshrc. ~/.zshrc is chezmoi-managed: hand edits (including tool
+# installers appending init snippets) show up as drift in
+# `dotfiles-sync --check` and are reverted by the next `chezmoi apply`.
+if [ -f "$HOME/.zsh_local" ]; then
+  source "$HOME/.zsh_local"
+fi

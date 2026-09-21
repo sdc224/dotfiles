@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Deploy unified Ctrl-first keys to every IDE. Re-runs when sources change.
+# keybindings hash: {{ include "dot_config/ide/keybindings.json" | sha256sum }}
+# intellij keymap hash: {{ include "dot_config/ide/intellij/DarculaCopy.xml" | sha256sum }}
+set -euo pipefail
+
+SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi/dot_config/ide}"
+if [ ! -d "$SRC_DIR" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo .)"
+  SRC_DIR="$SCRIPT_DIR/dot_config/ide"
+fi
+
+OS="$(uname -s)"
+if [ "$OS" = "Darwin" ]; then
+  BASE="$HOME/Library/Application Support"
+else
+  BASE="$HOME/.config"
+fi
+
+deploy_json() {
+  local src="$1" dest_dir="$2"
+  mkdir -p "$dest_dir"
+  if [ -f "$dest_dir/keybindings.json" ] && ! cmp -s "$src" "$dest_dir/keybindings.json"; then
+    cp "$dest_dir/keybindings.json" "$dest_dir/keybindings.json.backup.$(date +%Y%m%dT%H%M%S)"
+  fi
+  cp "$src" "$dest_dir/keybindings.json"
+  echo "ide-keys: keybindings -> $dest_dir"
+}
+
+if [ -f "$SRC_DIR/keybindings.json" ]; then
+  for app in Code Cursor Windsurf; do
+    # Code -> "Code", Cursor -> "Cursor", Windsurf -> "Windsurf" on both OSes.
+    deploy_json "$SRC_DIR/keybindings.json" "$BASE/$app/User"
+  done
+fi
+
+{{ if or .is_work .install_intellij -}}
+# IntelliJ keymap: work-only (personal trials set install_intellij=true).
+if [ -f "$SRC_DIR/intellij/DarculaCopy.xml" ]; then
+  if [ "$OS" = "Darwin" ]; then
+    JB_BASES=("$HOME/Library/Application Support/JetBrains")
+  else
+    JB_BASES=("$HOME/.config/JetBrains")
+  fi
+  for jb in "${JB_BASES[@]}"; do
+    [ -d "$jb" ] || continue
+    for product in "$jb"/*/; do
+      [ -d "$product" ] || continue
+      mkdir -p "${product}keymaps"
+      cp "$SRC_DIR/intellij/DarculaCopy.xml" "${product}keymaps/DarculaCopy.xml"
+      echo "ide-keys: intellij keymap -> ${product}keymaps"
+    done
+  done
+fi
+{{ else -}}
+echo "ide-keys: skipping IntelliJ keymap (personal profile, install_intellij=false)"
+{{ end -}}

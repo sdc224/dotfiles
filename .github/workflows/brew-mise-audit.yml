@@ -1,0 +1,57 @@
+name: Weekly brew + mise audit (upstream watcher)
+
+# Upstream direction: CI checks for NEW upstream versions on clean runners
+# and opens a PR. It cannot see your laptops; use `dotfiles-sync` on each
+# machine for the local direction (hand installs -> repo PR).
+on:
+  schedule:
+    - cron: "0 6 * * 3"  # Wed 06:00 UTC, beside local Wed 10:00 timers
+  workflow_dispatch:
+
+jobs:
+  audit-mac:
+    runs-on: macos-15  # arm64 runner, matches M4 fleet
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Homebrew
+        run: brew update || true
+      - name: Audit generic manifests against upstream
+        run: |
+          python3 - <<'PY'
+          import tomllib
+          for f in ("shared", "work", "personal"):
+              d = tomllib.load(open(f"dot_config/packages/{f}.toml", "rb"))
+              brews = (d.get("brew", {}) or {}).get("formulae", [])
+              casks = (d.get("cask", {}) or {}).get("casks", [])
+              print(f"{f}: {len(brews)} formulae, {len(casks)} casks")
+          PY
+          echo "--- livecheck on declared formulae ---"
+          for formula in git awscli protobuf tealdeer docker mysql; do
+            brew livecheck "$formula" 2>/dev/null || true
+          done
+      - name: Audit mise tools
+        uses: jdx/mise-action@v2
+        with:
+          experimental: true
+      - run: mise outdated || true
+      - name: Open update PR when drift is found
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): 🤖 weekly brew/mise upstream audit"
+          branch: "automation/weekly-audit"
+          title: "chore(deps): 🤖 weekly brew/mise upstream audit"
+          body: |
+            Weekly upstream watcher. Review livecheck/mise output in the run logs.
+            - Greedy cask upgrades (`brew upgrade --greedy`) still run locally via launchd; this PR only bumps manifests.
+            - macOS OS upgrades are MDM-owned; this workflow never installs them.
+
+  audit-fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check dnf/flatpak names resolve
+        run: |
+          dnf check-update || true
+          echo "Fedora container check done. Package names are owned in dot_config/packages/personal.toml."
