@@ -7,10 +7,34 @@ from tests.lib import repo
 TEXT = (repo.REPO_ROOT / "dot_config/mise/config.toml.tmpl").read_text()
 
 EXPECTED_TOOLS = [
-    "java", "rust", "node", "python", "starship", "usage", "uv", "dart",
-    "chezmoi", "ripgrep", "bat", "fd", "eza", "delta", "dust", "duf",
-    "fzf", "zoxide", "lazygit", "lazydocker", "gping", "bottom", "atuin",
-    "gh", "gum", "yazi", "cargo:procs", "cargo:tokei",
+    "java",
+    "rust",
+    "node",
+    "python",
+    "starship",
+    "usage",
+    "uv",
+    "dart",
+    "chezmoi",
+    "ripgrep",
+    "bat",
+    "fd",
+    "eza",
+    "delta",
+    "dust",
+    "duf",
+    "fzf",
+    "zoxide",
+    "lazygit",
+    "lazydocker",
+    "gping",
+    "bottom",
+    "atuin",
+    "gh",
+    "gum",
+    "yazi",
+    "cargo:procs",
+    "cargo:tokei",
 ]
 
 

@@ -55,9 +55,14 @@ class MiseFirstPolicyTest(unittest.TestCase):
                     self.assertNotIn(tool, entries[backend])
 
     def test_no_transitive_brew_deps_declared(self) -> None:
-        for manifest, label in ((SHARED, "shared"), (WORK, "work"), (PERSONAL, "personal")):
+        for manifest, label in (
+            (SHARED, "shared"),
+            (WORK, "work"),
+            (PERSONAL, "personal"),
+        ):
             self.assertEqual(
-                repo.find_transitive_declarations(manifest), [],
+                repo.find_transitive_declarations(manifest),
+                [],
                 f"{label} lists transitive deps",
             )
 

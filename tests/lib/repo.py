@@ -22,28 +22,52 @@ PACKAGES_DIR = REPO_ROOT / "dot_config" / "packages"
 MISE_TMPL = REPO_ROOT / "dot_config" / "mise" / "config.toml.tmpl"
 
 # Tools that MUST resolve to backend=mise (docs/DECISION.md + manifest-lint.yml).
-BANNED_SYSTEM_BACKENDS = frozenset({
-    "node",
-    "python",
-    "python@3.13",
-    "python@3.12",
-    "python@3.11",
-    "java",
-    "kubectl",
-    "kubernetes-cli",
-    "gum",
-    "gh",
-})
+BANNED_SYSTEM_BACKENDS = frozenset(
+    {
+        "node",
+        "python",
+        "python@3.13",
+        "python@3.12",
+        "python@3.11",
+        "java",
+        "kubectl",
+        "kubernetes-cli",
+        "gum",
+        "gh",
+    }
+)
 
 # Brew formulae the dispatcher/sync scripts treat as hidden transitive deps
 # (resolved by brew itself, never declared). Kept identical to the
 # `transitive` set in dotfiles-sync.
-TRANSITIVE_BREW_DEPS = frozenset({
-    "abseil", "brotli", "c-ares", "ca-certificates", "cffi", "cryptography",
-    "gettext", "icu4c@77", "icu4c@78", "libnghttp2", "libunistring", "libuv",
-    "lz4", "mpdecimal", "openssl@3", "pcre2", "protobuf", "pycparser",
-    "python@3.13", "readline", "sqlite", "xz", "zlib-ng-compat", "zstd",
-})
+TRANSITIVE_BREW_DEPS = frozenset(
+    {
+        "abseil",
+        "brotli",
+        "c-ares",
+        "ca-certificates",
+        "cffi",
+        "cryptography",
+        "gettext",
+        "icu4c@77",
+        "icu4c@78",
+        "libnghttp2",
+        "libunistring",
+        "libuv",
+        "lz4",
+        "mpdecimal",
+        "openssl@3",
+        "pcre2",
+        "protobuf",
+        "pycparser",
+        "python@3.13",
+        "readline",
+        "sqlite",
+        "xz",
+        "zlib-ng-compat",
+        "zstd",
+    }
+)
 
 # Formulae the enforce-mise guard actively uninstalls (brew copies owned
 # by mise). Mirrors BANNED_FORMULAE in run_onchange_after_15-enforce-mise.
@@ -106,7 +130,7 @@ def merged_plan(shared: dict, overlay: dict) -> list[str]:
 def plan_for_backend(plan: list[str], backend: str) -> list[str]:
     """Filter a merged plan to one backend's package names."""
     prefix = backend + ":"
-    return [line[len(prefix):] for line in plan if line.startswith(prefix)]
+    return [line[len(prefix) :] for line in plan if line.startswith(prefix)]
 
 
 def find_bannedDeclarations(*manifests: dict) -> list[str]:

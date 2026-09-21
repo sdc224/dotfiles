@@ -1,7 +1,3 @@
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-
 [tool.coverage.run]
 source = ["tests/lib"]
 branch = true
@@ -13,4 +9,16 @@ exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
     "raise AssertionError",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = [
+    # E501 conflicts with the formatter on unbreakable assert strings
+    # (policy literals). Formatter owns layout; lint owns correctness.
+    "E501",
 ]

@@ -1,6 +1,5 @@
 """Unit tests: schedulers (launchd plist, systemd units) + workflows."""
 
-import re
 import unittest
 import xml.etree.ElementTree as ET
 

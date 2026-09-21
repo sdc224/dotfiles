@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import UTC
 
 from tests.lib import repo
 
@@ -28,9 +29,9 @@ IS_LINUX = platform.system() == "Linux"
 
 PROFILE_CONFIG = {
     "work": '[data]\nname = "IT Work"\nemail = "work@example.com"\n'
-            "is_work = true\ninstall_intellij = true\n",
+    "is_work = true\ninstall_intellij = true\n",
     "personal": '[data]\nname = "IT Personal"\nemail = "personal@example.com"\n'
-                "is_work = false\ninstall_intellij = false\n",
+    "is_work = false\ninstall_intellij = false\n",
 }
 
 
@@ -44,7 +45,9 @@ def _base_env(extra_bin: pathlib.Path) -> dict:
     # Put the CURRENT python first: sync/dispatcher embed `python3`, and a
     # bare /usr/bin/python3 shim may be broken inside CI images.
     py_bin = os.path.dirname(sys.executable)
-    return dict(os.environ, PATH=f"{extra_bin}{os.pathsep}{py_bin}{os.pathsep}/usr/bin:/bin")
+    return dict(
+        os.environ, PATH=f"{extra_bin}{os.pathsep}{py_bin}{os.pathsep}/usr/bin:/bin"
+    )
 
 
 def render_script(profile: str, source_relpath: str) -> str:
@@ -54,15 +57,25 @@ def render_script(profile: str, source_relpath: str) -> str:
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-it-"))
     config = _config_for(profile, tmp)
     proc = subprocess.run(
-        [CHEZMOI, "--config", str(config), "--source", str(REPO),
-         "execute-template", "--file", source_relpath],
+        [
+            CHEZMOI,
+            "--config",
+            str(config),
+            "--source",
+            str(REPO),
+            "execute-template",
+            "--file",
+            source_relpath,
+        ],
         capture_output=True,
         text=True,
         timeout=60,
         cwd=str(REPO),
     )
     if proc.returncode != 0:
-        raise AssertionError(f"execute-template {source_relpath} ({profile}): {proc.stderr}")
+        raise AssertionError(
+            f"execute-template {source_relpath} ({profile}): {proc.stderr}"
+        )
     return proc.stdout
 
 
@@ -75,8 +88,17 @@ def render(profile: str, home_target: str) -> str:
     home.mkdir()
     config = _config_for(profile, tmp)
     proc = subprocess.run(
-        [CHEZMOI, "--config", str(config), "--source", str(REPO),
-         "--destination", str(home), "cat", str(home / home_target.lstrip("/"))],
+        [
+            CHEZMOI,
+            "--config",
+            str(config),
+            "--source",
+            str(REPO),
+            "--destination",
+            str(home),
+            "cat",
+            str(home / home_target.lstrip("/")),
+        ],
         capture_output=True,
         text=True,
         timeout=60,
@@ -109,7 +131,9 @@ class ChezmoiWorkProfileTest(unittest.TestCase):
 
     def test_dispatcher_overlay_per_profile(self) -> None:
         work = render_script("work", "run_onchange_after_10-install-packages.sh.tmpl")
-        personal = render_script("personal", "run_onchange_after_10-install-packages.sh.tmpl")
+        personal = render_script(
+            "personal", "run_onchange_after_10-install-packages.sh.tmpl"
+        )
         self.assertIn('OVERLAY="$SRC_DIR/work.toml"', work)
         self.assertIn('OVERLAY="$SRC_DIR/personal.toml"', personal)
 
@@ -139,13 +163,16 @@ class DispatcherExecutionTest(unittest.TestCase):
         write_stub(bin_dir, "dnf", f'echo "dnf $*" >> "{log}"\nexit 0')
         write_stub(bin_dir, "flatpak", f'echo "flatpak $*" >> "{log}"\nexit 0')
         write_stub(bin_dir, "sudo", 'exec "$@"')
-        rendered = render_script(profile, "run_onchange_after_10-install-packages.sh.tmpl")
+        rendered = render_script(
+            profile, "run_onchange_after_10-install-packages.sh.tmpl"
+        )
         script = tmp / "dispatcher.sh"
         script.write_text(rendered)
         env = _base_env(bin_dir)
         env["CHEZMOI_SOURCE_DIR"] = str(REPO)
-        proc = subprocess.run(["bash", str(script)], capture_output=True,
-                              text=True, timeout=120, env=env)
+        proc = subprocess.run(
+            ["bash", str(script)], capture_output=True, text=True, timeout=120, env=env
+        )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         return log.read_text() if log.exists() else ""
 
@@ -173,26 +200,43 @@ class DispatcherExecutionTest(unittest.TestCase):
 class SyncCheckTest(unittest.TestCase):
     """Run the real dotfiles-sync --check with stubbed host commands."""
 
-    def _run_sync(self, *, extra_brew: str = "", extra_flatpak: str = "") -> subprocess.CompletedProcess:
+    def _run_sync(
+        self, *, extra_brew: str = "", extra_flatpak: str = ""
+    ) -> subprocess.CompletedProcess:
         tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-sync-"))
         bin_dir = tmp / "bin"
         bin_dir.mkdir()
-        write_stub(bin_dir, "chezmoi", 'if [ "$1" = "status" ]; then exit 0; fi\nexit 0')
-        brews = "git\nduti\ntealdeer\ndocker\ndocker-completion\nprotobuf\nawscli\nmysql" + extra_brew
-        write_stub(bin_dir, "brew",
-                   f'if [ "$1 $2" = "list --formula" ]; then printf "{brews}\\n"; exit 0; fi\n'
-                   'if [ "$1 $2" = "list --cask" ]; then printf "ghostty\\nvisual-studio-code\\ncursor\\nwindsurf\\n'
-                   'font-jetbrains-mono-nerd-font\\nfont-meslo-lg-nerd-font\\nfirefox\\ngoogle-chrome\\n'
-                   'intellij-idea\\njetbrains-toolbox\\npostman\\n"; exit 0; fi\nexit 0')
-        write_stub(bin_dir, "flatpak",
-                   'if [ "$1" = "list" ]; then printf "Application\\norg.mozilla.firefox\\n'
-                   f'{extra_flatpak}"; exit 0; fi\nexit 0')
+        write_stub(
+            bin_dir, "chezmoi", 'if [ "$1" = "status" ]; then exit 0; fi\nexit 0'
+        )
+        brews = (
+            "git\nduti\ntealdeer\ndocker\ndocker-completion\nprotobuf\nawscli\nmysql"
+            + extra_brew
+        )
+        write_stub(
+            bin_dir,
+            "brew",
+            f'if [ "$1 $2" = "list --formula" ]; then printf "{brews}\\n"; exit 0; fi\n'
+            'if [ "$1 $2" = "list --cask" ]; then printf "ghostty\\nvisual-studio-code\\ncursor\\nwindsurf\\n'
+            "font-jetbrains-mono-nerd-font\\nfont-meslo-lg-nerd-font\\nfirefox\\ngoogle-chrome\\n"
+            'intellij-idea\\njetbrains-toolbox\\npostman\\n"; exit 0; fi\nexit 0',
+        )
+        write_stub(
+            bin_dir,
+            "flatpak",
+            'if [ "$1" = "list" ]; then printf "Application\\norg.mozilla.firefox\\n'
+            f'{extra_flatpak}"; exit 0; fi\nexit 0',
+        )
         write_stub(bin_dir, "mise", 'if [ "$1" = "outdated" ]; then exit 0; fi\nexit 0')
         env = _base_env(bin_dir)
         env["CHEZMOI_SOURCE_DIR"] = str(REPO)
         return subprocess.run(
             ["bash", str(REPO / "dot_local/bin/dotfiles-sync"), "--check"],
-            capture_output=True, text=True, timeout=60, env=env)
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+        )
 
     def test_clean_machine_reports_no_drift(self) -> None:
         proc = self._run_sync()
@@ -216,7 +260,9 @@ class SyncCheckTest(unittest.TestCase):
 class AutoUpdateTest(unittest.TestCase):
     """Run the real auto-update with stubs: staleness guard + status file."""
 
-    def _run_auto_update(self, args: list[str], status_body: str | None) -> tuple[subprocess.CompletedProcess, pathlib.Path]:
+    def _run_auto_update(
+        self, args: list[str], status_body: str | None
+    ) -> tuple[subprocess.CompletedProcess, pathlib.Path]:
         tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-auto-"))
         fake_home = tmp / "home"
         (fake_home / ".local/share").mkdir(parents=True)
@@ -231,13 +277,20 @@ class AutoUpdateTest(unittest.TestCase):
         env["HOME"] = str(fake_home)
         proc = subprocess.run(
             ["bash", str(REPO / "dot_local/bin/dotfiles-auto-update"), *args],
-            capture_output=True, text=True, timeout=120, env=env)
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+        )
         return proc, fake_home
 
     def test_fresh_status_skips_without_force(self) -> None:
-        from datetime import datetime, timezone
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        proc, home = self._run_auto_update([], f"last_run={now}\nresult=ok\ndrift=clean\n")
+        from datetime import datetime
+
+        now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        proc, home = self._run_auto_update(
+            [], f"last_run={now}\nresult=ok\ndrift=clean\n"
+        )
         self.assertEqual(proc.returncode, 0)
         # NOTE: auto-update redirects all output to the log file
         # (exec >>"$LOG"), so assert on the log, not stdout.
@@ -256,10 +309,17 @@ class AutoUpdateTest(unittest.TestCase):
 class DoctorTest(unittest.TestCase):
     """Run the real dotfiles-doctor with stubs + a fake HOME."""
 
-    def _run_doctor(self, *, with_brew: bool = True, dirty: bool = False,
-                    scheduler_loaded: bool = True, gh_authed: bool = True,
-                    status_body: str | None = None, log_body: str | None = None,
-                    stdin: str | None = None) -> tuple[subprocess.CompletedProcess, pathlib.Path]:
+    def _run_doctor(
+        self,
+        *,
+        with_brew: bool = True,
+        dirty: bool = False,
+        scheduler_loaded: bool = True,
+        gh_authed: bool = True,
+        status_body: str | None = None,
+        log_body: str | None = None,
+        stdin: str | None = None,
+    ) -> tuple[subprocess.CompletedProcess, pathlib.Path]:
         tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-doc-"))
         fake_home = tmp / "home"
         (fake_home / ".config/ghostty").mkdir(parents=True)
@@ -275,7 +335,9 @@ class DoctorTest(unittest.TestCase):
             '[data]\nname = "IT"\nemail = "it@example.com"\n'
             "is_work = true\ninstall_intellij = true\n"
         )
-        (fake_home / "Library/Application Support/Code/User/keybindings.json").write_text("[]\n")
+        (
+            fake_home / "Library/Application Support/Code/User/keybindings.json"
+        ).write_text("[]\n")
         if status_body is not None:
             (fake_home / ".local/share/dotfiles-update.status").write_text(status_body)
         if log_body is not None:
@@ -295,27 +357,37 @@ class DoctorTest(unittest.TestCase):
             (state / "scheduler").write_text("loaded\n")
         bin_dir = tmp / "bin"
         bin_dir.mkdir()
-        write_stub(bin_dir, "chezmoi",
-                   'if [ "$1" = "status" ]; then cat "$DOCTOR_STATE/drift" 2>/dev/null; exit 0; fi\n'
-                   'if [ "$1" = "apply" ]; then rm -f "$DOCTOR_STATE/drift"; exit 0; fi\n'
-                   'if [ "$1" = "--version" ]; then echo "chezmoi version test"; exit 0; fi\nexit 0')
+        write_stub(
+            bin_dir,
+            "chezmoi",
+            'if [ "$1" = "status" ]; then cat "$DOCTOR_STATE/drift" 2>/dev/null; exit 0; fi\n'
+            'if [ "$1" = "apply" ]; then rm -f "$DOCTOR_STATE/drift"; exit 0; fi\n'
+            'if [ "$1" = "--version" ]; then echo "chezmoi version test"; exit 0; fi\nexit 0',
+        )
         if with_brew:
             write_stub(bin_dir, "brew", "exit 0")
         for name in ("mise", "starship", "git"):
             write_stub(bin_dir, name, "exit 0")
         write_stub(bin_dir, "gh", "exit 0" if gh_authed else "exit 1")
-        write_stub(bin_dir, "launchctl",
-                   'if [ "$1" = "list" ]; then cat "$DOCTOR_STATE/scheduler" 2>/dev/null && echo com.dotfiles.update; exit 0; fi\n'
-                   'if [ "$1" = "bootstrap" ]; then echo loaded > "$DOCTOR_STATE/scheduler"; exit 0; fi\n'
-                   "exit 0")
+        write_stub(
+            bin_dir,
+            "launchctl",
+            'if [ "$1" = "list" ]; then cat "$DOCTOR_STATE/scheduler" 2>/dev/null && echo com.dotfiles.update; exit 0; fi\n'
+            'if [ "$1" = "bootstrap" ]; then echo loaded > "$DOCTOR_STATE/scheduler"; exit 0; fi\n'
+            "exit 0",
+        )
         env = _base_env(bin_dir)
         env["HOME"] = str(fake_home)
         env["CHEZMOI_SOURCE_DIR"] = str(REPO)
         env["DOCTOR_STATE"] = str(state)
         proc = subprocess.run(
             ["bash", str(REPO / "dot_local/bin/dotfiles-doctor")],
-            capture_output=True, text=True, timeout=120, env=env,
-            input=stdin)
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+            input=stdin,
+        )
         return proc, state
 
     def test_healthy_machine_exits_zero(self) -> None:
@@ -372,8 +444,9 @@ class DoctorTest(unittest.TestCase):
     def test_fresh_status_and_clean_log_pass(self) -> None:
         if not IS_DARWIN:
             self.skipTest("brew/launchctl doctor branch needs macOS")
-        from datetime import datetime, timezone
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        from datetime import datetime
+
+        now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         proc, _ = self._run_doctor(
             status_body=f"last_run={now}\nresult=ok\ndrift=clean\n",
             log_body="=== dotfiles-auto-update ===\nauto-update: drift check clean\n",
