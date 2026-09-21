@@ -93,6 +93,28 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | Personal uses gh credential helper; work does not | auto (render both profiles) |
 | Rancher/ZIA shell sourcing work-only | auto (render both profiles) |
 
+## 9. Smoke (real Fedora install — weekly)
+
+Status `smoke` = `tests/smoke/run.sh` on a real `fedora:latest` image via
+[`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml) (schedule +
+manual). Package managers are **not** stubbed. Intelligent Hub / MDM apps are
+out of scope.
+
+| Case | personal | work | Status |
+|---|---|---|---|
+| Non-interactive `chezmoi init --apply` (prompt flags) | ✅ | ✅ | smoke |
+| Apply log has no hard failure markers | ✅ | ✅ | smoke |
+| Core mise tools respond (`node -v`, `rg`, `gh`, …) | ✅ | ✅ | smoke |
+| Managed paths exist (`.zshrc`, mise, ghostty, doctor) | ✅ | ✅ | smoke |
+| Personal dnf apps (`neovim`, `distrobox`, `docker-ce`) | ✅ | absent | smoke |
+| Flatpak Postman | ✅ | n/a | smoke |
+| Ghostty (COPR) on PATH | ✅ | shared-only | smoke |
+| `kubectl` via mise | absent | ✅ | smoke |
+| Work DXS rule in `GEMINI.md` / personal rule otherwise | ✅ | ✅ | smoke |
+| IntelliJ keymap deploy (pre-seeded JetBrains dir) | absent | ✅ | smoke |
+| systemd `enable --now` for docker/timer | shimmed in CI | shimmed | smoke (host = manual) |
+| macOS brew/cask GUI apps (Cursor, IntelliJ, …) | — | — | manual (not in free Linux smoke) |
+
 ## Adding a new app? Update this plan
 
 1. Decide the backend per `docs/DECISION.md`.
@@ -100,4 +122,5 @@ Why manual: mutates the host package manager. CI covers the *shape*
    (profile membership / MDM exclusion).
 3. If it changes install behaviour, extend `test_converge.py`
    (render or stub-call assertion for work + personal).
-4. CI matrix picks it up automatically — no workflow edit needed.
+4. If it should appear on a real Fedora host, extend `tests/smoke/verify.sh`.
+5. Stubbed CI matrix picks it up automatically — no workflow edit needed.

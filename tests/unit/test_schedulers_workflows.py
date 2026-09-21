@@ -124,5 +124,22 @@ class TestsWorkflowTest(unittest.TestCase):
         self.assertIn("dotfiles-doctor", self.TEXT)
 
 
+class SmokeWorkflowTest(unittest.TestCase):
+    TEXT = read(".github/workflows/smoke.yml")
+
+    def test_scheduled_and_manual(self) -> None:
+        self.assertIn("schedule:", self.TEXT)
+        self.assertIn("workflow_dispatch:", self.TEXT)
+
+    def test_fedora_matrix_both_profiles(self) -> None:
+        self.assertIn("fedora:latest", self.TEXT)
+        self.assertIn("personal", self.TEXT)
+        self.assertIn("work", self.TEXT)
+        self.assertIn("tests/smoke/run.sh", self.TEXT)
+
+    def test_not_on_pull_request(self) -> None:
+        self.assertNotIn("pull_request", self.TEXT)
+
+
 if __name__ == "__main__":
     unittest.main()
