@@ -74,7 +74,8 @@ Why manual: mutates the host package manager. CI covers the *shape*
 | `--check` never opens a PR | ✅ | ✅ | auto |
 | auto-PR guards (gh auth, no open sync PR, opt-out) | ✅ | ✅ | unit (strings) |
 | greedy cask upgrade, mise upgrade+prune | ✅ | ✅ | auto (stubs) |
-| dnf notify-only (never upgrades OS) | n/a | ✅ | unit + auto |
+| DNF updates owned by Fedora OS scheduler (user timer reports only) | n/a | ✅ | unit + auto |
+| Docker DNF repository + Engine service enabled on personal Fedora | n/a | ✅ | auto (stubs) + ci-only |
 
 ## 8. Doctor (`dotfiles-doctor`: verify, invoke modules, read logs)
 

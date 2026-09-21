@@ -9,9 +9,12 @@ to finalize in `dot_config/packages/personal.toml` ([dnf] / [flatpak]).
   copy-or-interrupt and Shift+Insert paste parity.
 - Auto-update: `systemd --user enable --now dotfiles-update.timer`
   (also enabled once by `run_once_after_40-enable-schedulers`). GNOME Software
-  still owns unattended OS/flatpak upgrades; the timer keeps mise + flatpak
-  CLIs in sync and only notifies for dnf.
+  owns unattended DNF upgrades, including Docker Engine from Docker's official
+  repository. The timer keeps mise and Flatpak CLIs in sync and reports any
+  DNF updates it sees.
 - Local drift PRs: run `dotfiles-sync` after hand-installing anything; it
   diffs manifests and opens a PR via `gh`.
-- Docker on Fedora (Engine + Desktop) was in the old `install.sh` and is
-  intentionally not ported: add it to `personal.toml` when you want it back.
+- Docker Engine is declared in `personal.toml`. The dispatcher enables Docker's
+  signed DNF repository through DNF itself (no curl installer), installs Engine,
+  Buildx, and Compose, then enables `docker.service`. Sign out and back in
+  after adding yourself to the `docker` group if you want non-`sudo` access.
