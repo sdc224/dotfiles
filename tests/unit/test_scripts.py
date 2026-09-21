@@ -207,6 +207,13 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         self.assertIn("libatomic", text)
         self.assertIn("gcc", text)
 
+    def test_bootstrap_linux_owns_converge_primitives(self) -> None:
+        # Fresh-machine deps live HERE — not in smoke/CI pre-seed lists.
+        text = read("run_once_before_00-bootstrap.sh.tmpl")
+        for pkg in ("python3", "flatpak", "fontconfig", "diffutils", "unzip"):
+            self.assertIn(pkg, text, f"bootstrap missing {pkg}")
+        self.assertNotIn("2>/dev/null || true", text)
+
     def test_bootstrap_installs_nerd_fonts_linux(self) -> None:
         text = read("run_once_before_00-bootstrap.sh.tmpl")
         self.assertIn("NerdFonts", text)

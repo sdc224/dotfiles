@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Bootstrap: install only the tools chezmoi itself needs to converge.
-# Runs once per machine (run_once). Everything else goes through the
-# dispatcher (run_onchange_after_10) and mise (run_onchange_after_20).
+# Bootstrap: first-contact setup for a brand-new machine.
+# Runs once (run_once). This is the only place OS primitives needed to
+# *converge* should be installed — smoke/CI must not pre-seed them.
+#
+# After this script: dispatcher (10) + mise (20) + the rest can run.
+# Prerequisite from the human: curl + network (see README / MANUAL.md).
 set -euo pipefail
 
 OS="$(uname -s)"
@@ -19,10 +22,25 @@ if [ "$OS" = "Darwin" ]; then
   brew list git &>/dev/null || brew install git
 elif [ "$OS" = "Linux" ]; then
   if command -v dnf &>/dev/null; then
-    # gcc + libatomic: mise cargo:* tools compile from source; Node needs libatomic.so.1
-    sudo dnf install -y git curl zsh gh flatpak gcc libatomic 2>/dev/null || true
+    echo "bootstrap: installing Fedora converge primitives..."
+    # git/curl/zsh/flatpak: base converge + Ghostty flatpak path
+    # python3: dispatcher TOML merge
+    # gcc/libatomic: mise cargo:* compile + Node libatomic.so.1
+    # tar/gzip/unzip/fontconfig/findutils/which/diffutils: fonts, scripts, ide-keys
+    # gh: early GitHub CLI until mise install provides the managed one
+    sudo dnf install -y \
+      git curl zsh flatpak gh \
+      python3 \
+      gcc libatomic \
+      tar gzip unzip fontconfig findutils which diffutils
   elif command -v apt &>/dev/null; then
-    sudo apt update && sudo apt install -y git curl zsh flatpak gcc libatomic1 2>/dev/null || true
+    echo "bootstrap: installing Debian/Ubuntu converge primitives..."
+    sudo apt-get update
+    sudo apt-get install -y \
+      git curl zsh flatpak \
+      python3 \
+      gcc libatomic1 \
+      tar gzip unzip fontconfig findutils debianutils diffutils
   fi
   # Nerd Fonts (Linux): JetBrains Mono + Meslo for Ghostty/VS Code parity.
   # Best-effort only — not required to converge. GitHub release CDNs 504 in CI.
@@ -48,7 +66,7 @@ fi
 # mise: owns all runtimes + Rust CLIs (see docs/DECISION.md).
 if ! command -v mise &>/dev/null && [ ! -x "$HOME/.local/bin/mise" ]; then
   echo "bootstrap: installing mise..."
-  curl https://mise.run | sh
+  curl --retry 5 --retry-delay 2 --retry-all-errors -fsSL https://mise.run | sh
 fi
 export PATH="$HOME/.local/bin:$PATH"
 

@@ -33,7 +33,8 @@ The same flow on every OS. Profile (`is_work`) and OS backends are chosen at ini
 - **Work machines with MDM:** install company-provided apps from the portal first. Never put those in package manifests — list them in [`docs/MDM.md`](docs/MDM.md). OS-specific checklists live in [`docs/MANUAL.md`](docs/MANUAL.md).
 - **Personal / unmanaged hosts:** finish base OS setup (updates, package repos) once, then bootstrap.
 - **Minimum prerequisite:** `curl` and internet access. You do not need
-  Homebrew, Git, mise, or a preinstalled Chezmoi binary.
+  Homebrew, Git, mise, python, a C compiler, or a preinstalled Chezmoi binary —
+  `run_once_before_00-bootstrap` installs the converge primitives on first apply.
 
 ### Bootstrap
 
