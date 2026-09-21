@@ -90,7 +90,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install chezmoi
-        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+        run: bash tests/lib/install-chezmoi.sh "$HOME/.local/bin"
       - name: Integration tests (work + personal profiles, stubbed dnf/flatpak)
         run: |
           export PATH="$HOME/.local/bin:$PATH"
@@ -104,6 +104,6 @@ jobs:
       - name: Install python + chezmoi
         run: |
           dnf install -y python3 curl tar gzip diffutils
-          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+          bash tests/lib/install-chezmoi.sh /usr/local/bin
       - name: Integration tests on real Fedora userland
         run: python3 -m unittest discover -s tests/integration -v
