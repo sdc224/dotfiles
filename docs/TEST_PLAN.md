@@ -102,7 +102,7 @@ out of scope.
 
 | Case | personal | work | Status |
 |---|---|---|---|
-| Non-interactive `chezmoi init --apply` (prompt flags) | ✅ | ✅ | smoke |
+| Non-interactive `chezmoi apply` (pre-written config + linked source) | ✅ | ✅ | smoke |
 | Apply log has no hard failure markers | ✅ | ✅ | smoke |
 | Core mise tools respond (`node -v`, `rg`, `gh`, …) | ✅ | ✅ | smoke |
 | Managed paths exist (`.zshrc`, mise, ghostty, doctor) | ✅ | ✅ | smoke |

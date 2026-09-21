@@ -1,7 +1,8 @@
 # Smoke tests — real Fedora install (not stubbed)
 
 Scripts here drive a blank Fedora image through non-interactive
-`chezmoi init --apply`, scan the apply log, then assert binaries and paths.
+`chezmoi apply` (pre-written config + linked source), scan the apply log,
+then assert binaries and paths.
 
 | File | Role |
 |---|---|

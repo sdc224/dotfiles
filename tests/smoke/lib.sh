@@ -54,8 +54,9 @@ EOF
   fi
 }
 
-write_prompt_args() {
-  # Emits chezmoi --prompt* flags for non-interactive init.
+write_smoke_config() {
+  # Pre-answer .chezmoi.toml.tmpl prompts without chezmoi init (CI checkouts
+  # often lack a usable .git, so `chezmoi init <path>` fails with git clone).
   local profile="$1"
   local is_work=false
   local install_intellij=false
@@ -63,11 +64,21 @@ write_prompt_args() {
     is_work=true
     install_intellij=true
   fi
-  printf '%s\n' \
-    --promptString "Git name=Smoke Test" \
-    --promptString "Git email=smoke@example.com" \
-    --promptBool "Work machine=${is_work}" \
-    --promptBool "Install IntelliJ IDEA=${install_intellij}"
+  mkdir -p "$HOME/.config/chezmoi"
+  cat >"$HOME/.config/chezmoi/chezmoi.toml" <<EOF
+[data]
+    name = "Smoke Test"
+    email = "smoke@example.com"
+    is_work = ${is_work}
+    install_intellij = ${install_intellij}
+EOF
+}
+
+link_source_dir() {
+  # Same layout as a normal chezmoi init clone target.
+  mkdir -p "$HOME/.local/share"
+  ln -sfn "$REPO_ROOT" "$HOME/.local/share/chezmoi"
+  log "source -> $HOME/.local/share/chezmoi (-> $REPO_ROOT)"
 }
 
 activate_mise() {

@@ -30,6 +30,10 @@ Full Fedora image × `{personal, work}` with real `dnf` / flatpak / mise:
 PROFILE=personal bash tests/smoke/run.sh
 ```
 
+CI writes a chezmoi config (answers prompts), links the checkout to
+`~/.local/share/chezmoi`, then `chezmoi apply` — it does **not** `git clone`
+the workspace (GHA Fedora images lack git at checkout time).
+
 CI: [`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml) — weekly
 (Thursday) + `workflow_dispatch`. Not on every PR (too heavy).
 
@@ -72,8 +76,8 @@ job so `unit` stays fast (~0.2s, no `pip install`).
   `dotfiles-doctor` healthy/broken/scheduler/gh-required/log-evaluation
   against a fake HOME.
 - `tests/smoke/` — real Fedora install smoke (`run.sh` + `verify.sh`):
-  non-interactive `chezmoi init --apply`, log scan, then `node -v` / package /
-  path assertions for personal and work (no MDM apps).
+  non-interactive `chezmoi apply` (config written, source linked), log scan,
+  then `node -v` / package / path assertions for personal and work (no MDM).
 
 ## What "100% coverage" means
 
