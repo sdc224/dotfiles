@@ -10,17 +10,35 @@ Python 3.11+ only (we use stdlib `tomllib`). Everything else is stdlib,
 so the suite runs with zero dependencies:
 
 ```bash
-python3 -m unittest discover -s tests/unit        # fast: ~0.2s, 130 tests
+python3 -m unittest discover -s tests/unit        # fast: ~0.2s, 139 tests
 python3 -m unittest discover -s tests/integration # slower: runs real chezmoi + scripts with stubbed package managers
 ```
 
-With pytest + coverage (as CI does):
+Correctness comes from these two commands. Coverage and lint are separate,
+opt-in quality gates (see below).
+
+## Lint + format
+
+| Area | Linter | Formatter | Run locally |
+|---|---|---|---|
+| Shell scripts + templates | `shellcheck -S warning` | `shfmt -i 2` | CI `lint` job (install via `apt install shellcheck shfmt` / `brew`) |
+| Python tests (`tests/`) | `ruff check` (Rust, fastest) | `ruff format` | `pip install -r tests/requirements.txt` then `ruff check tests/ && ruff format --check tests/` |
+
+`E501` (line length) is intentionally ignored in `pyproject.toml`: the
+formatter owns layout, and policy-literal `assertIn` strings cannot be
+split. Lint owns correctness (`E/F/I/UP`), format owns style.
+
+## Coverage (completeness, not correctness)
 
 ```bash
-python -m pip install -r tests/requirements.txt
-coverage run -m pytest tests/unit -q && coverage report --show-missing
-python -m pytest tests/integration -q
+python -m pip install -r tests/requirements.txt   # coverage + ruff only
+coverage run -m unittest discover -s tests/unit
+coverage report --fail-under=100 --show-missing
 ```
+
+No `pytest` anywhere: `coverage run -m unittest` is sufficient and keeps
+the hot path dependency-free. CI runs this as a separate blocking `coverage`
+job so `unit` stays fast (~0.2s, no `pip install`).
 
 ## Layout
 

@@ -42,7 +42,8 @@ class ShellSyntaxTest(unittest.TestCase):
             text = read(script)
             # Strip the chezmoi first line for .tmpl files (not valid bash).
             body = "\n".join(
-                line for line in text.splitlines()
+                line
+                for line in text.splitlines()
                 if not line.lstrip().startswith("# {{")
             )
             proc = subprocess.run(
@@ -70,9 +71,7 @@ class ShellSyntaxTest(unittest.TestCase):
 
     def test_scripts_have_shebang(self) -> None:
         for script in SCRIPTS:
-            self.assertTrue(
-                read(script).startswith("#!/usr/bin/env bash"), script
-            )
+            self.assertTrue(read(script).startswith("#!/usr/bin/env bash"), script)
 
 
 class DispatcherScriptTest(unittest.TestCase):
@@ -211,8 +210,12 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         text = read("run_once_after_40-enable-schedulers.sh.tmpl")
         self.assertIn("launchctl list | grep -q com.dotfiles.update", text)
         self.assertIn("systemctl --user is-enabled dotfiles-update.timer", text)
-        self.assertNotIn('launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null', text)
-        self.assertNotIn("systemctl --user enable --now dotfiles-update.timer 2>/dev/null", text)
+        self.assertNotIn(
+            'launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null', text
+        )
+        self.assertNotIn(
+            "systemctl --user enable --now dotfiles-update.timer 2>/dev/null", text
+        )
 
 
 class DoctorScriptTest(unittest.TestCase):
@@ -225,7 +228,8 @@ class DoctorScriptTest(unittest.TestCase):
         import re
 
         code = "\n".join(
-            line for line in cls.TEXT.splitlines()
+            line
+            for line in cls.TEXT.splitlines()
             if line.strip() and not line.strip().startswith("#")
         )
         code = re.sub(r'"[^"\n]*"', '""', code)
@@ -243,7 +247,8 @@ class DoctorScriptTest(unittest.TestCase):
 
         code = self.code_text()
         raw = "\n".join(
-            line for line in self.TEXT.splitlines()
+            line
+            for line in self.TEXT.splitlines()
             if line.strip() and not line.strip().startswith("#")
         )
         lines = code.splitlines()
@@ -262,17 +267,23 @@ class DoctorScriptTest(unittest.TestCase):
                 continue
             if in_def:
                 continue
-            if (re.search(r"(?<![\w()])chezmoi (apply|re-add)\b", line)
-                    or re.search(r"(?<![\w()])gh auth login\b", line)
-                    or re.search(r"(?<![\w()])fix_drift_(apply|record)\b", line)):
+            if (
+                re.search(r"(?<![\w()])chezmoi (apply|re-add)\b", line)
+                or re.search(r"(?<![\w()])gh auth login\b", line)
+                or re.search(r"(?<![\w()])fix_drift_(apply|record)\b", line)
+            ):
                 sites.append((i, s))
         self.assertTrue(sites, "expected prompt-gated call sites")
         for i, call in sites:
-            window = "\n".join(raw_lines[max(0, i - 10):i])
+            window = "\n".join(raw_lines[max(0, i - 10) : i])
             self.assertTrue(
-                ("prompt_drift" in window or "ask_yes_no" in window
-                 or "[ -t 0 ]" in window),
-                f"ungated mutation: {call}")
+                (
+                    "prompt_drift" in window
+                    or "ask_yes_no" in window
+                    or "[ -t 0 ]" in window
+                ),
+                f"ungated mutation: {call}",
+            )
 
     def test_scheduler_enables_itself(self) -> None:
         # No prompt, no flag: a missing scheduler is converged on the spot.
@@ -280,8 +291,13 @@ class DoctorScriptTest(unittest.TestCase):
         self.assertIn("launchd job could not be enabled", self.TEXT)
 
     def test_evaluates_update_logs(self) -> None:
-        for marker in ("dotfiles-update.log", "last_run=", "drift detected",
-                       "NOT opening a PR", "stale"):
+        for marker in (
+            "dotfiles-update.log",
+            "last_run=",
+            "drift detected",
+            "NOT opening a PR",
+            "stale",
+        ):
             self.assertIn(marker, self.TEXT, f"doctor ignores log evidence: {marker}")
 
     def test_failures_name_owner_module(self) -> None:
@@ -297,9 +313,19 @@ class DoctorScriptTest(unittest.TestCase):
         self.assertIn("[fail]", self.TEXT)
 
     def test_covers_all_setup_areas(self) -> None:
-        for area in ("profile", "chezmoi", "manifests", "mise", ".zshrc",
-                     "ghostty", "keybindings", "launchd", "update.status",
-                     "git identity", "gh"):
+        for area in (
+            "profile",
+            "chezmoi",
+            "manifests",
+            "mise",
+            ".zshrc",
+            "ghostty",
+            "keybindings",
+            "launchd",
+            "update.status",
+            "git identity",
+            "gh",
+        ):
             self.assertIn(area, self.TEXT, f"doctor missing area: {area}")
 
     def test_profile_survives_old_configs(self) -> None:

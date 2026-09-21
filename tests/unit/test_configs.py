@@ -1,7 +1,6 @@
 """Unit tests: static configs (ghostty, starship, aliases, IDE, git)."""
 
 import json
-import re
 import unittest
 
 from tests.lib import repo
@@ -16,8 +15,7 @@ def read(path: str) -> str:
 def read_jsonc(path: str):
     """Parse JSON with // comment lines (VS Code keybindings are JSONC)."""
     lines = [
-        line for line in read(path).splitlines()
-        if not line.strip().startswith("//")
+        line for line in read(path).splitlines() if not line.strip().startswith("//")
     ]
     return json.loads("\n".join(lines))
 
