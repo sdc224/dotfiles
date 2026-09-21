@@ -3,7 +3,8 @@
 This machine is owned by you. Scaffolding is in place; package names are yours
 to finalize in `dot_config/packages/personal.toml` ([dnf] / [flatpak]).
 
-- Converge: `chezmoi update -v` (dispatcher installs dnf + flatpak + mise).
+- Converge: `chezmoi update -v` (bootstrap installs OS primitives on first
+  apply; dispatcher then installs dnf + flatpak + mise tools).
 - Ghostty: installed from the `ghostty/ghostty` COPR by the dispatcher when
   missing. Same `dot_config/ghostty/config` as macOS, including Ctrl-C
   copy-or-interrupt and Shift+Insert paste parity.

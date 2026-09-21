@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# Fedora smoke: blank-ish image → non-interactive chezmoi apply → verify.
+# Fedora smoke: blank image → chezmoi apply → verify.
+#
+# Principle: this repo is first contact for a fresh machine. Smoke must NOT
+# pre-install converge deps (gcc, python3, flatpak, …) — those belong in
+# run_once_before_00-bootstrap. Smoke only provides:
+#   1. CI harness shims (systemctl/sudo in containers)
+#   2. chezmoi binary (human path: get.chezmoi.io; needs curl)
+#   3. non-interactive profile config + apply + assertions
 #
 # Usage:
 #   PROFILE=personal ./tests/smoke/run.sh
@@ -29,26 +36,20 @@ if [ "${SKIP_SYSTEMCTL_SHIM:-0}" != "1" ]; then
   install_systemctl_shim /usr/local/bin
 fi
 
-# Primitives the bootstrap/dispatcher/mise expect on a fresh Fedora host.
-# gcc + libatomic: cargo:procs/tokei compile from source; Node needs libatomic.so.1
-log "installing base OS packages for smoke host"
-dnf install -y \
-  curl tar gzip diffutils findutils which \
-  python3 git sudo passwd shadow-utils \
-  fontconfig unzip \
-  gcc libatomic \
-  >/dev/null
+# Sole OS prerequisite for first contact (matches README/MANUAL.md).
+if ! command -v curl &>/dev/null; then
+  log "installing curl (only smoke/host prerequisite)"
+  dnf install -y curl
+fi
+require_cmd curl
 
-# Chezmoi binary (retry + GitHub fallback; release CDNs 504 in CI).
+# Chezmoi binary — same role as the human one-liner in README, with CI retries.
 if ! command -v chezmoi &>/dev/null; then
   log "installing chezmoi"
   bash "$REPO_ROOT/tests/lib/install-chezmoi.sh" /usr/local/bin
 fi
 require_cmd chezmoi
-require_cmd python3
 
-# Fresh destination home for this run (keeps runner $HOME pollution low when
-# nested; in GHA container HOME is already the job user/root home).
 export HOME="${SMOKE_HOME:-$HOME}"
 mkdir -p "$HOME"
 
@@ -58,20 +59,18 @@ if [ "$PROFILE" = "work" ]; then
   mkdir -p "$HOME/.config/JetBrains/IntelliJIdeaSmoke/keymaps"
 fi
 
-# GHA container checkouts often have no .git (no git in the image at checkout
-# time), so `chezmoi init <path>` fails with: repository does not exist.
-# Mirror a completed init: write config + link source, then apply.
+# Non-interactive profile (answers .chezmoi.toml.tmpl prompts). Link checkout
+# as the source — GHA trees often lack .git so we avoid `chezmoi init <path>`.
 write_smoke_config "$PROFILE"
 link_source_dir
 
-log "chezmoi apply (non-interactive, source=$HOME/.local/share/chezmoi)"
+log "chezmoi apply (bootstrap owns OS deps; source=$HOME/.local/share/chezmoi)"
 set +e
 chezmoi apply -v \
   >"$SMOKE_APPLY_LOG" 2>&1
 APPLY_RC=$?
 set -e
 
-# Always surface the tail of the log in CI.
 tail -n 80 "$SMOKE_APPLY_LOG" || true
 
 if [ "$APPLY_RC" -ne 0 ]; then

@@ -9,15 +9,18 @@ requires hardware/MDM that CI cannot provide; verify by hand after reprovision.
 
 ## 1. Bootstrap (`run_once_before_00`)
 
+First-contact script for a blank machine. Owns every OS primitive needed to
+converge (package manager basics, python3 for the dispatcher, gcc/libatomic
+for mise cargo/Node, font tooling, mise, zinit). Smoke/CI must not duplicate
+these installs.
+
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
 | Homebrew installed when missing | ✅ | n/a | manual |
-| dnf basics + Nerd Fonts | n/a | ✅ | manual |
-| mise installed when missing | ✅ | ✅ | manual |
-| zinit cloned when missing | ✅ | ✅ | manual |
-
-Why manual: mutates the host package manager. CI covers the *shape*
-(strict mode, tool list) in unit tests.
+| dnf converge primitives (git/zsh/python3/gcc/libatomic/…) | n/a | ✅ | auto (bootstrap) + smoke |
+| mise installed when missing | ✅ | ✅ | auto (bootstrap) + smoke |
+| zinit cloned when missing | ✅ | ✅ | auto (bootstrap) + smoke |
+| Nerd Fonts (best-effort; non-fatal) | n/a | ✅ | auto (bootstrap) |
 
 ## 2. Package dispatcher (`run_onchange_after_10`)
 
