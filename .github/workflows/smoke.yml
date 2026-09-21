@@ -1,0 +1,59 @@
+name: Smoke (Fedora real install)
+
+# Full-system smoke: Fedora image × {personal, work} with real dnf/flatpak/mise.
+# Not on every PR — too slow / heavy. Weekly + manual only.
+# Stays on GitHub Actions (free for public repos; no Travis/Azure needed).
+
+on:
+  schedule:
+    # Thursday 06:00 UTC — day after weekly brew/mise audit
+    - cron: "0 6 * * 4"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Profile to smoke (or both)"
+        type: choice
+        options:
+          - both
+          - personal
+          - work
+        default: both
+
+concurrency:
+  group: smoke-fedora
+  cancel-in-progress: false
+
+jobs:
+  smoke-fedora:
+    name: Fedora ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.profile != 'both' && fromJSON(format('["{0}"]', github.event.inputs.profile)) || fromJSON('["personal", "work"]') }}
+    container:
+      image: fedora:latest
+      # Privileged: docker-ce / flatpak / COPR need broader capabilities.
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          dnf clean all || true
+          df -h /
+
+      - name: Run smoke (real chezmoi init --apply)
+        env:
+          PROFILE: ${{ matrix.profile }}
+          SMOKE_LOG_DIR: ${{ github.workspace }}/smoke-logs
+        run: bash tests/smoke/run.sh
+
+      - name: Upload apply log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-${{ matrix.profile }}-logs
+          path: smoke-logs/
+          if-no-files-found: ignore

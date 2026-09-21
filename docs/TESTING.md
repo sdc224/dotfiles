@@ -14,8 +14,24 @@ python3 -m unittest discover -s tests/unit        # fast: ~0.2s, 139 tests
 python3 -m unittest discover -s tests/integration # slower: runs real chezmoi + scripts with stubbed package managers
 ```
 
-Correctness comes from these two commands. Coverage and lint are separate,
-opt-in quality gates (see below).
+Correctness for day-to-day work comes from those two commands. Coverage and
+lint are separate, opt-in quality gates (see below).
+
+### Smoke (real installs — periodic)
+
+Full Fedora image × `{personal, work}` with real `dnf` / flatpak / mise:
+
+```bash
+# Needs Docker + network; mirrors CI
+./tests/smoke/docker-run.sh personal
+./tests/smoke/docker-run.sh work
+
+# Or inside an existing Fedora host/container:
+PROFILE=personal bash tests/smoke/run.sh
+```
+
+CI: [`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml) — weekly
+(Thursday) + `workflow_dispatch`. Not on every PR (too heavy).
 
 ## Lint + format
 
@@ -55,6 +71,9 @@ job so `unit` stays fast (~0.2s, no `pip install`).
   `dotfiles-auto-update` staleness guard + status file, and
   `dotfiles-doctor` healthy/broken/scheduler/gh-required/log-evaluation
   against a fake HOME.
+- `tests/smoke/` — real Fedora install smoke (`run.sh` + `verify.sh`):
+  non-interactive `chezmoi init --apply`, log scan, then `node -v` / package /
+  path assertions for personal and work (no MDM apps).
 
 ## What "100% coverage" means
 
