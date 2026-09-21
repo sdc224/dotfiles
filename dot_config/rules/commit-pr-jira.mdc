@@ -1,0 +1,50 @@
+---
+description: Commit, PR, and Jira style for Sourodeep's Intuit work
+alwaysApply: true
+---
+
+# Commit, PR, and Jira
+
+Apply these whenever creating commits, pull requests, or Jira issues unless the user overrides them.
+
+## Commits
+
+- Conventional Commits: `type(scope): subject`
+- Include an emoji in the **title** after the colon
+- **Scope is lowercase only** (package or area name). Never put a Jira key in the scope — keys are uppercase (`DXS-19505`) and commitlint rejects caps in scope.
+- Put the Jira key at the **end of the title**, separated by a hyphen: ` - DXS-12345`
+- Title (first line) **must be ≤ 70 characters**
+- Body is optional; keep it to why, not a file list
+
+Examples:
+
+```
+fix(storybook): 🔧 recover Storybook and bundle - DXS-19505
+feat(release): ✨ add per-package release - DXS-19505
+```
+
+Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`.
+
+## Pull requests
+
+- PR **title must match the commit title**, including the emoji and Jira key
+- Do not drop the emoji when creating or editing the PR
+- Body: short Summary + Test plan; include the Jira URL
+
+## Jira
+
+- Default project: **DXS** (Data Extraction Services)
+- Default type for this kind of work: **Story**
+- Assign to the current user (Sourodeep Chatterjee)
+- Set **Story Points** when asked (this recovery story is 5)
+- Link a parent epic before In Progress (workflow requires it)
+- Active DXS epic used for this work: **DXS-19317** (in2Doc Enhancements and support)
+- Add to the current DXS sprint if In Progress rejects the transition
+- Transition: Open → **Start Progress** (In Progress)
+- Ticket for this modernization: **DXS-19505**
+  https://intuit-prod.atlassian.net/browse/DXS-19505
+
+## In2Doc design-system context
+
+- Requirements / done / pending live in `docs/MODERNIZATION-CONTEXT.md`
+- Keep monorepo component packages; do not create a new DevPortal asset

@@ -317,5 +317,60 @@ else
   warn "git user.name/email not set globally"
 fi
 
+# 12. Agent skills + rules converge into every IDE. Advisory only (warn,
+# never fail): a missing link is repaired by the run_onchange scripts on
+# the next `chezmoi apply`. Work skills (vcode-sdlc-*, k8s-mysql) are owned
+# by the Intuit developer desktop app and are never checked here.
+if [ -d "$HOME/.config/skills" ]; then
+  for skill_dir in "$HOME"/.config/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill="$(basename "$skill_dir")"
+    for dest in "$HOME/.cursor/skills/$skill" "$HOME/.claude/skills/$skill"; do
+      if [ -L "$dest" ] || [ -e "$dest" ]; then
+        ok "skill $skill present at $dest"
+      else
+        warn "skill $skill missing at $dest (re-run chezmoi apply)"
+      fi
+    done
+    if [ -d "$HOME/.gemini" ]; then
+      for dest in "$HOME/.gemini/config/skills/$skill" "$HOME/.gemini/antigravity/skills/$skill"; do
+        if [ -L "$dest" ] || [ -e "$dest" ]; then
+          ok "skill $skill present at $dest"
+        else
+          warn "skill $skill missing at $dest (re-run chezmoi apply)"
+        fi
+      done
+    fi
+  done
+else
+  warn "no skill store at ~/.config/skills (chezmoi apply first)"
+fi
+case "$PROFILE" in
+  true/*) ACTIVE_RULE="commit-pr-jira" ;;
+  *) ACTIVE_RULE="personal-commits" ;;
+esac
+if [ -f "$HOME/.cursor/rules/$ACTIVE_RULE.mdc" ]; then
+  ok "rules: $ACTIVE_RULE deployed (cursor)"
+else
+  warn "rules: $ACTIVE_RULE missing in ~/.cursor/rules (re-run chezmoi apply)"
+fi
+if [ -f "$HOME/.claude/commands/$ACTIVE_RULE.md" ]; then
+  ok "rules: $ACTIVE_RULE deployed (claude command)"
+else
+  warn "rules: $ACTIVE_RULE missing in ~/.claude/commands (re-run chezmoi apply)"
+fi
+if grep -q "dotfiles-rules:start" "$HOME/.claude/CLAUDE.md" 2>/dev/null; then
+  ok "rules: global block present (CLAUDE.md)"
+else
+  warn "rules: global block missing in ~/.claude/CLAUDE.md (re-run chezmoi apply)"
+fi
+if [ -d "$HOME/.gemini" ]; then
+  if grep -q "dotfiles-rules:start" "$HOME/.gemini/GEMINI.md" 2>/dev/null; then
+    ok "rules: global block present (GEMINI.md)"
+  else
+    warn "rules: global block missing in ~/.gemini/GEMINI.md (re-run chezmoi apply)"
+  fi
+fi
+
 say "== doctor: $((fails)) failure(s), $((warns)) warning(s) =="
 [ "$fails" -eq 0 ]
