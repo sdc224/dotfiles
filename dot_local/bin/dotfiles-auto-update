@@ -3,7 +3,16 @@
 # Weekly: brew (greedy so auto-updating casks move), mise, flatpak.
 # dnf is notify-only: GNOME Software owns unattended OS updates.
 set -uo pipefail
-export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# Ensure launchd/systemd can find our bins + brew without shadowing a
+# caller-provided PATH (integration tests put stubs first).
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+if ! command -v brew >/dev/null 2>&1; then
+  PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+fi
+export PATH
 LOG="$HOME/.local/share/dotfiles-update.log"
 STATUS="$HOME/.local/share/dotfiles-update.status"
 mkdir -p "$(dirname "$LOG")"

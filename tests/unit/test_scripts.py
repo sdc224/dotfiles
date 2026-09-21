@@ -161,6 +161,15 @@ class AutoUpdateScriptTest(unittest.TestCase):
         self.assertIn("STALE_DAYS=6", self.TEXT)
         self.assertIn("--force", self.TEXT)
 
+    def test_path_does_not_shadow_existing_brew(self) -> None:
+        # Prepending /opt/homebrew/bin unconditionally made CI stubs lose to
+        # the real brew and hung `brew upgrade --greedy` for 120s+.
+        self.assertIn('command -v brew', self.TEXT)
+        self.assertNotIn(
+            'export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"',
+            self.TEXT,
+        )
+
     def test_greedy_brew_upgrade(self) -> None:
         self.assertIn("brew upgrade --greedy", self.TEXT)
 
