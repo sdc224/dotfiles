@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Shared auto-update body for macOS launchd AND Fedora systemd.
 # Weekly: brew (greedy so auto-updating casks move), mise, flatpak.
-# dnf is notify-only: GNOME Software owns unattended OS updates.
+# Fedora's OS update scheduler owns DNF upgrades; this user timer reports
+# available DNF updates while it upgrades mise and Flatpak applications.
 set -uo pipefail
 # Ensure launchd/systemd can find our bins + brew without shadowing a
 # caller-provided PATH (integration tests put stubs first).
@@ -56,7 +57,7 @@ if [ "$(uname -s)" = "Linux" ]; then
     flatpak update -y || true
   fi
   if command -v dnf &>/dev/null; then
-    dnf check-update || true # notify only; do not upgrade OS packages here
+    dnf check-update || true # OS scheduler performs DNF upgrades
   fi
 fi
 
@@ -91,7 +92,9 @@ fi
 # 1. Status file: latest run summary for scripts/prompts (`cat` it any time).
 printf 'last_run=%s\nresult=ok\ndrift=%s\nlog=%s\n' "$START" "$DRIFT" "$LOG" >"$STATUS"
 # 2. Desktop toast so a weekly background run is visible.
-NOTICE="brew + mise + casks updated."
+NOTICE="Package update run completed."
+[ "$(uname -s)" = "Linux" ] &&
+  NOTICE="mise + Flatpak updated; Fedora's OS scheduler manages DNF updates."
 [ "$DRIFT" = "clean" ] || NOTICE="drift detected ($DRIFT) - check log: ~/.local/share/dotfiles-update.log"
 if [ "$(uname -s)" = "Darwin" ]; then
   osascript -e "display notification \"$NOTICE\" with title \"dotfiles auto-update\"" 2>/dev/null || true
