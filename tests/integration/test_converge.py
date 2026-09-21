@@ -253,5 +253,135 @@ class AutoUpdateTest(unittest.TestCase):
         self.assertTrue((home / ".local/share/dotfiles-update.log").exists())
 
 
+class DoctorTest(unittest.TestCase):
+    """Run the real dotfiles-doctor with stubs + a fake HOME."""
+
+    def _run_doctor(self, *, with_brew: bool = True, dirty: bool = False,
+                    scheduler_loaded: bool = True, gh_authed: bool = True,
+                    status_body: str | None = None, log_body: str | None = None,
+                    stdin: str | None = None) -> tuple[subprocess.CompletedProcess, pathlib.Path]:
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="dot-doc-"))
+        fake_home = tmp / "home"
+        (fake_home / ".config/ghostty").mkdir(parents=True)
+        (fake_home / ".config/mise").mkdir(parents=True)
+        (fake_home / ".config/chezmoi").mkdir(parents=True)
+        (fake_home / "Library/Application Support/Code/User").mkdir(parents=True)
+        (fake_home / "Library/LaunchAgents").mkdir(parents=True)
+        (fake_home / ".local/share").mkdir(parents=True)
+        (fake_home / ".zshrc").write_text("# fake zshrc\n")
+        (fake_home / ".config/ghostty/config").write_text("# fake ghostty\n")
+        (fake_home / ".config/mise/config.toml").write_text("[tools]\n")
+        (fake_home / ".config/chezmoi/chezmoi.toml").write_text(
+            '[data]\nname = "IT"\nemail = "it@example.com"\n'
+            "is_work = true\ninstall_intellij = true\n"
+        )
+        (fake_home / "Library/Application Support/Code/User/keybindings.json").write_text("[]\n")
+        if status_body is not None:
+            (fake_home / ".local/share/dotfiles-update.status").write_text(status_body)
+        if log_body is not None:
+            (fake_home / ".local/share/dotfiles-update.log").write_text(log_body)
+        (fake_home / "Library/LaunchAgents/com.dotfiles.update.plist").write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
+            '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+            '<plist version="1.0"><dict><key>Label</key>'
+            "<string>com.dotfiles.update</string></dict></plist>\n"
+        )
+        state = tmp / "state"
+        state.mkdir()
+        if dirty:
+            (state / "drift").write_text("M .zshrc\n")
+        if scheduler_loaded:
+            (state / "scheduler").write_text("loaded\n")
+        bin_dir = tmp / "bin"
+        bin_dir.mkdir()
+        write_stub(bin_dir, "chezmoi",
+                   'if [ "$1" = "status" ]; then cat "$DOCTOR_STATE/drift" 2>/dev/null; exit 0; fi\n'
+                   'if [ "$1" = "apply" ]; then rm -f "$DOCTOR_STATE/drift"; exit 0; fi\n'
+                   'if [ "$1" = "--version" ]; then echo "chezmoi version test"; exit 0; fi\nexit 0')
+        if with_brew:
+            write_stub(bin_dir, "brew", "exit 0")
+        for name in ("mise", "starship", "git"):
+            write_stub(bin_dir, name, "exit 0")
+        write_stub(bin_dir, "gh", "exit 0" if gh_authed else "exit 1")
+        write_stub(bin_dir, "launchctl",
+                   'if [ "$1" = "list" ]; then cat "$DOCTOR_STATE/scheduler" 2>/dev/null && echo com.dotfiles.update; exit 0; fi\n'
+                   'if [ "$1" = "bootstrap" ]; then echo loaded > "$DOCTOR_STATE/scheduler"; exit 0; fi\n'
+                   "exit 0")
+        env = _base_env(bin_dir)
+        env["HOME"] = str(fake_home)
+        env["CHEZMOI_SOURCE_DIR"] = str(REPO)
+        env["DOCTOR_STATE"] = str(state)
+        proc = subprocess.run(
+            ["bash", str(REPO / "dot_local/bin/dotfiles-doctor")],
+            capture_output=True, text=True, timeout=120, env=env,
+            input=stdin)
+        return proc, state
+
+    def test_healthy_machine_exits_zero(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        proc, _ = self._run_doctor()
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("[ok]", proc.stdout)
+        self.assertIn("is_work/install_intellij = true/true", proc.stdout)
+
+    def test_missing_package_manager_fails(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        proc, _ = self._run_doctor(with_brew=False)
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("[fail]", proc.stdout)
+
+    def test_default_mode_only_reports(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        proc, state = self._run_doctor(dirty=True, scheduler_loaded=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("[warn]", proc.stdout)
+        self.assertNotIn("[fixed]", proc.stdout)
+        self.assertTrue((state / "drift").exists())
+
+    def test_scheduler_enables_itself(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        proc, state = self._run_doctor(scheduler_loaded=False)
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("[fixed]", proc.stdout)
+        self.assertTrue((state / "scheduler").exists())
+
+    def test_gh_auth_is_required(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        proc, _ = self._run_doctor(gh_authed=False)
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("[fail]", proc.stdout)
+
+    def test_stale_status_and_dirty_log_surface(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        proc, _ = self._run_doctor(
+            status_body="last_run=2020-01-01T00:00:00Z\nresult=ok\ndrift=drift-detected\n",
+            log_body="=== dotfiles-auto-update ===\nauto-update: drift detected, see log above\n",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("stale", proc.stdout)
+        self.assertIn("drift-detected", proc.stdout)
+        self.assertIn("log shows problems", proc.stdout)
+
+    def test_fresh_status_and_clean_log_pass(self) -> None:
+        if not IS_DARWIN:
+            self.skipTest("brew/launchctl doctor branch needs macOS")
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        proc, _ = self._run_doctor(
+            status_body=f"last_run={now}\nresult=ok\ndrift=clean\n",
+            log_body="=== dotfiles-auto-update ===\nauto-update: drift check clean\n",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn("weekly run fresh", proc.stdout)
+        self.assertIn("update log clean", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

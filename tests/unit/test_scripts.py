@@ -25,6 +25,7 @@ SCRIPTS = [
     "run_once_after_40-enable-schedulers.sh.tmpl",
     "dot_local/bin/dotfiles-sync",
     "dot_local/bin/dotfiles-auto-update",
+    "dot_local/bin/dotfiles-doctor",
 ]
 
 
@@ -203,6 +204,109 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         text = read("run_once_after_40-enable-schedulers.sh.tmpl")
         self.assertIn("launchctl", text)
         self.assertIn("dotfiles-update.timer", text)
+
+    def test_scheduler_verifies_loudly(self) -> None:
+        # Install steps own correctness: enable must be followed by a
+        # verification that fails the run instead of swallowing errors.
+        text = read("run_once_after_40-enable-schedulers.sh.tmpl")
+        self.assertIn("launchctl list | grep -q com.dotfiles.update", text)
+        self.assertIn("systemctl --user is-enabled dotfiles-update.timer", text)
+        self.assertNotIn('launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null', text)
+        self.assertNotIn("systemctl --user enable --now dotfiles-update.timer 2>/dev/null", text)
+
+
+class DoctorScriptTest(unittest.TestCase):
+    TEXT = read("dot_local/bin/dotfiles-doctor")
+
+    @classmethod
+    def code_text(cls) -> str:
+        """Doctor source minus comments and quoted strings (advice text
+        may NAME mutating commands without running them)."""
+        import re
+
+        code = "\n".join(
+            line for line in cls.TEXT.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        )
+        code = re.sub(r'"[^"\n]*"', '""', code)
+        return re.sub(r"'[^'\n]*'", "''", code)
+
+    def test_interactive_prompts(self) -> None:
+        self.assertIn("[ -t 0 ]", self.TEXT)
+        self.assertIn("read -r -p", self.TEXT)
+        self.assertIn("gh auth login", self.TEXT)
+        self.assertIn("chezmoi re-add", self.TEXT)
+        self.assertNotIn('"$FIX"', self.TEXT)
+
+    def test_destructive_choices_are_prompt_gated(self) -> None:
+        import re
+
+        code = self.code_text()
+        raw = "\n".join(
+            line for line in self.TEXT.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        )
+        lines = code.splitlines()
+        raw_lines = raw.splitlines()
+        # Lines inside fix_drift_*() bodies are covered by gating their
+        # invocations instead (checked below).
+        in_def = False
+        sites = []
+        for i, line in enumerate(lines):
+            s = raw_lines[i].strip()
+            if re.match(r"fix_drift_(apply|record)\(\)", s):
+                in_def = True
+                continue
+            if in_def and s == "}":
+                in_def = False
+                continue
+            if in_def:
+                continue
+            if (re.search(r"(?<![\w()])chezmoi (apply|re-add)\b", line)
+                    or re.search(r"(?<![\w()])gh auth login\b", line)
+                    or re.search(r"(?<![\w()])fix_drift_(apply|record)\b", line)):
+                sites.append((i, s))
+        self.assertTrue(sites, "expected prompt-gated call sites")
+        for i, call in sites:
+            window = "\n".join(raw_lines[max(0, i - 10):i])
+            self.assertTrue(
+                ("prompt_drift" in window or "ask_yes_no" in window
+                 or "[ -t 0 ]" in window),
+                f"ungated mutation: {call}")
+
+    def test_scheduler_enables_itself(self) -> None:
+        # No prompt, no flag: a missing scheduler is converged on the spot.
+        self.assertIn("fix_scheduler", self.TEXT)
+        self.assertIn("launchd job could not be enabled", self.TEXT)
+
+    def test_evaluates_update_logs(self) -> None:
+        for marker in ("dotfiles-update.log", "last_run=", "drift detected",
+                       "NOT opening a PR", "stale"):
+            self.assertIn(marker, self.TEXT, f"doctor ignores log evidence: {marker}")
+
+    def test_failures_name_owner_module(self) -> None:
+        self.assertIn("run_once_before_00-bootstrap", self.TEXT)
+        self.assertIn("run_once_after_40-enable-schedulers", self.TEXT)
+
+    def test_exit_code_contract(self) -> None:
+        self.assertIn('[ "$fails" -eq 0 ]', self.TEXT)
+
+    def test_severity_levels(self) -> None:
+        self.assertIn("[ok]", self.TEXT)
+        self.assertIn("[warn]", self.TEXT)
+        self.assertIn("[fail]", self.TEXT)
+
+    def test_covers_all_setup_areas(self) -> None:
+        for area in ("profile", "chezmoi", "manifests", "mise", ".zshrc",
+                     "ghostty", "keybindings", "launchd", "update.status",
+                     "git identity", "gh"):
+            self.assertIn(area, self.TEXT, f"doctor missing area: {area}")
+
+    def test_profile_survives_old_configs(self) -> None:
+        # Older configs predate install_intellij; detection must degrade
+        # to unknown instead of erroring (no execute-template missingkey).
+        self.assertIn("unknown", self.TEXT)
+        self.assertNotIn("execute-template", self.code_text())
 
 
 if __name__ == "__main__":
