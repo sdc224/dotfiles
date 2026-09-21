@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+# Health check for this machine's dotfiles setup. READ-ONLY: never installs,
+# mutates, or applies anything. Exit 0 when healthy, 1 when any [fail] fires.
+# Warnings ([warn]) are advisory and do not affect the exit code.
+#
+# Usage: dotfiles-doctor
+set -euo pipefail
+
+OS="$(uname -s)"
+REPO="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
+fails=0
+warns=0
+
+ok()   { printf '[ok]   %s\n' "$*"; }
+warn() { printf '[warn] %s\n' "$*"; warns=$((warns + 1)); }
+fail() { printf '[fail] %s\n' "$*"; fails=$((fails + 1)); }
+
+say() { printf '%s\n' "$*"; }
+
+say "== dotfiles-doctor: $OS (repo: $REPO) =="
+
+# 1. Profile: who does chezmoi think this machine is?
+PROFILE="$(chezmoi execute-template '{{ .is_work }}/{{ .install_intellij }}' 2>/dev/null || echo "unknown/unknown")"
+say "-- profile: is_work/install_intellij = $PROFILE"
+
+# 2. chezmoi itself: installed, source present, no drift.
+if command -v chezmoi &>/dev/null; then
+  ok "chezmoi installed ($(chezmoi --version 2>/dev/null | head -n1))"
+else
+  fail "chezmoi not on PATH"
+fi
+if [ -d "$REPO/dot_config/packages" ]; then
+  ok "source manifests present"
+else
+  fail "manifests missing under $REPO/dot_config/packages"
+fi
+if command -v chezmoi &>/dev/null; then
+  if [ -z "$(chezmoi status 2>/dev/null || true)" ]; then
+    ok "chezmoi status clean"
+  else
+    warn "chezmoi status shows drift (run chezmoi diff, then dotfiles-sync)"
+  fi
+fi
+
+# 3. System package manager for this OS.
+if [ "$OS" = "Darwin" ]; then
+  if command -v brew &>/dev/null; then
+    ok "homebrew present"
+  else
+    fail "homebrew missing (bootstrap should have installed it)"
+  fi
+elif [ "$OS" = "Linux" ]; then
+  if command -v dnf &>/dev/null; then
+    ok "dnf present"
+  else
+    fail "dnf missing"
+  fi
+  if command -v flatpak &>/dev/null; then
+    ok "flatpak present"
+  else
+    warn "flatpak missing (desktop apps will not converge)"
+  fi
+fi
+
+# 4. Manifests parse and obey the mise-first rule.
+if command -v python3 &>/dev/null; then
+  if python3 - "$REPO" <<'PY' 2>/dev/null; then
+import sys, tomllib, pathlib
+repo = pathlib.Path(sys.argv[1])
+BANNED = {"node", "python", "python@3.13", "python@3.12", "python@3.11",
+          "java", "kubectl", "kubernetes-cli", "gum", "gh"}
+for f in ("shared.toml", "work.toml", "personal.toml"):
+    data = tomllib.load(open(repo / "dot_config" / "packages" / f, "rb"))
+    for section in ("brew", "dnf", "winget"):
+        names = (data.get(section, {}) or {}).get("formulae", []) + \
+                (data.get(section, {}) or {}).get("packages", [])
+        if BANNED & set(names):
+            sys.exit(1)
+PY
+    ok "manifests parse, mise-first holds"
+  else
+    fail "manifests unparseable or declare banned backends (see docs/DECISION.md)"
+  fi
+else
+  fail "python3 missing (needed to parse manifests)"
+fi
+
+# 5. mise owns the runtimes + CLIs.
+if command -v mise &>/dev/null; then
+  ok "mise installed"
+  if [ -f "$HOME/.config/mise/config.toml" ]; then
+    ok "mise config deployed"
+  else
+    fail "mise config missing at ~/.config/mise/config.toml"
+  fi
+else
+  fail "mise missing (bootstrap should have installed it)"
+fi
+
+# 6. Shell + terminal basics.
+if [ -f "$HOME/.zshrc" ]; then
+  ok "~/.zshrc present"
+else
+  fail "~/.zshrc missing"
+fi
+if [ -f "$HOME/.config/ghostty/config" ]; then
+  ok "ghostty config deployed"
+else
+  fail "ghostty config missing"
+fi
+if command -v starship &>/dev/null; then
+  ok "starship on PATH"
+else
+  warn "starship not on PATH (prompt falls back; mise should own it)"
+fi
+
+# 7. IDE keybindings deployed (only for editors already installed).
+for app in Code Cursor Windsurf; do
+  if [ "$OS" = "Darwin" ]; then
+    dir="$HOME/Library/Application Support/$app/User"
+  else
+    dir="$HOME/.config/$app/User"
+  fi
+  if [ -d "$dir" ]; then
+    if [ -f "$dir/keybindings.json" ]; then
+      ok "$app keybindings deployed"
+    else
+      warn "$app installed but keybindings.json missing (re-run chezmoi apply)"
+    fi
+  fi
+done
+
+# 8. Weekly scheduler enabled.
+if [ "$OS" = "Darwin" ]; then
+  if launchctl list 2>/dev/null | grep -q com.dotfiles.update; then
+    ok "launchd weekly update loaded"
+  else
+    warn "launchd job not loaded (run_once_after_40 should enable it; see docs/MANUAL.md)"
+  fi
+elif command -v systemctl &>/dev/null; then
+  if systemctl --user is-enabled dotfiles-update.timer &>/dev/null; then
+    ok "systemd weekly timer enabled"
+  else
+    warn "systemd timer not enabled (see docs/MANUAL.md)"
+  fi
+fi
+
+# 9. Last auto-update fresh (stale = this machine missed its weekly run).
+STATUS="$HOME/.local/share/dotfiles-update.status"
+if [ -f "$STATUS" ]; then
+  DRIFT="$(grep '^drift=' "$STATUS" 2>/dev/null | cut -d= -f2- || echo unknown)"
+  ok "last update status: drift=$DRIFT"
+else
+  warn "no update status yet (weekly run has not fired on this machine)"
+fi
+
+# 10. Git identity + GitHub CLI (advisory only).
+if git config --global user.name &>/dev/null && git config --global user.email &>/dev/null; then
+  ok "git identity set"
+else
+  warn "git user.name/email not set globally"
+fi
+if command -v gh &>/dev/null && gh auth token &>/dev/null 2>&1; then
+  ok "gh authenticated"
+else
+  warn "gh not authed (dotfiles-sync cannot open PRs until you auth)"
+fi
+
+say "== doctor: $((fails)) failure(s), $((warns)) warning(s) =="
+[ "$fails" -eq 0 ]

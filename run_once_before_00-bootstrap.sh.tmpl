@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Bootstrap: install only the tools chezmoi itself needs to converge.
+# Runs once per machine (run_once). Everything else goes through the
+# dispatcher (run_onchange_after_10) and mise (run_onchange_after_20).
+set -euo pipefail
+
+OS="$(uname -s)"
+
+if [ "$OS" = "Darwin" ]; then
+  if ! command -v brew &>/dev/null; then
+    echo "bootstrap: installing Homebrew (arm64)..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+  if [ -f "/opt/homebrew/bin/brew" ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -f "/usr/local/bin/brew" ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+  brew list git &>/dev/null || brew install git
+elif [ "$OS" = "Linux" ]; then
+  if command -v dnf &>/dev/null; then
+    sudo dnf install -y git curl zsh gh flatpak 2>/dev/null || true
+  elif command -v apt &>/dev/null; then
+    sudo apt update && sudo apt install -y git curl zsh flatpak 2>/dev/null || true
+  fi
+  # Nerd Fonts (Linux): JetBrains Mono + Meslo for Ghostty/VS Code parity.
+  FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
+  if [ ! -d "$FONT_DIR" ]; then
+    echo "bootstrap: installing Nerd Fonts..."
+    mkdir -p "$FONT_DIR"
+    for nf in JetBrainsMono Meslo; do
+      curl -fLo "/tmp/${nf}.tar.xz" \
+        "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${nf}.tar.xz"
+      tar -xf "/tmp/${nf}.tar.xz" -C "$FONT_DIR"
+    done
+    fc-cache -fv "$FONT_DIR" || true
+  fi
+fi
+
+# mise: owns all runtimes + Rust CLIs (see docs/DECISION.md).
+if ! command -v mise &>/dev/null && [ ! -x "$HOME/.local/bin/mise" ]; then
+  echo "bootstrap: installing mise..."
+  curl https://mise.run | sh
+fi
+export PATH="$HOME/.local/bin:$PATH"
+
+# zinit (zsh plugin manager, turbo mode).
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+if [ ! -d "$ZINIT_HOME" ]; then
+  echo "bootstrap: installing zinit..."
+  mkdir -p "$(dirname "$ZINIT_HOME")"
+  git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
+
+echo "bootstrap: done. Converge with: chezmoi apply"
