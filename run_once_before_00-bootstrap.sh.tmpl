@@ -24,14 +24,21 @@ elif [ "$OS" = "Linux" ]; then
     sudo apt update && sudo apt install -y git curl zsh flatpak 2>/dev/null || true
   fi
   # Nerd Fonts (Linux): JetBrains Mono + Meslo for Ghostty/VS Code parity.
+  # Best-effort only — not required to converge. GitHub release CDNs 504 in CI.
   FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
-  if [ ! -d "$FONT_DIR" ]; then
+  if [ ! -d "$FONT_DIR" ] ||
+    ! find "$FONT_DIR" \( -name '*.ttf' -o -name '*.otf' \) 2>/dev/null | grep -q .; then
     echo "bootstrap: installing Nerd Fonts..."
     mkdir -p "$FONT_DIR"
     for nf in JetBrainsMono Meslo; do
-      curl -fLo "/tmp/${nf}.tar.xz" \
-        "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${nf}.tar.xz"
-      tar -xf "/tmp/${nf}.tar.xz" -C "$FONT_DIR"
+      if curl --retry 5 --retry-delay 2 --retry-all-errors -fL \
+        -o "/tmp/${nf}.tar.xz" \
+        "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${nf}.tar.xz"; then
+        tar -xf "/tmp/${nf}.tar.xz" -C "$FONT_DIR" || \
+          echo "bootstrap: warning: extract $nf failed (non-fatal)" >&2
+      else
+        echo "bootstrap: warning: download $nf failed (non-fatal)" >&2
+      fi
     done
     fc-cache -fv "$FONT_DIR" || true
   fi

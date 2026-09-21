@@ -205,6 +205,9 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         text = read("run_once_before_00-bootstrap.sh.tmpl")
         self.assertIn("NerdFonts", text)
         self.assertIn("JetBrainsMono", text)
+        # Fonts are cosmetic; GitHub 504s must not abort converge.
+        self.assertIn("--retry", text)
+        self.assertIn("non-fatal", text)
 
     def test_scheduler_enables_launchd_and_systemd(self) -> None:
         text = read("run_once_after_40-enable-schedulers.sh.tmpl")
