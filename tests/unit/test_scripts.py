@@ -107,7 +107,9 @@ class DispatcherScriptTest(unittest.TestCase):
         self.assertNotIn("brew uninstall", self.TEXT)
 
     def test_fedora_copr_ghostty(self) -> None:
-        self.assertIn("ghostty/ghostty", self.TEXT)
+        # Official Ghostty docs point at scottames/ghostty (F44+ builds).
+        self.assertIn("scottames/ghostty", self.TEXT)
+        self.assertIn("dnf copr enable -y scottames/ghostty", self.TEXT)
 
     def test_flatpak_flathub_ensured(self) -> None:
         self.assertIn("flathub", self.TEXT)
