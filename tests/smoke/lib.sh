@@ -135,14 +135,16 @@ assert_file() {
 assert_log_clean() {
   local logf="$1"
   [ -f "$logf" ] || fail "apply log missing: $logf"
-  # Hard failures only — chezmoi/scripts print informational lines freely.
+  # Hard failures only: chezmoi reporting a script exit, or our own fatal
+  # markers. Do NOT match bare `error:` — flatpak/dnf soft-fail paths print
+  # that while the dispatcher continues (`|| true`).
   if grep -Eiq \
-    '^(error:|fatal:)|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap:.*error' \
+    'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' \
     "$logf"; then
     grep -Ein \
-      '^(error:|fatal:)|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap:.*error' \
+      'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' \
       "$logf" | head -n 40 >&2 || true
-    fail "apply log contains failure markers (see above)"
+    fail "apply log contains hard failure markers (see above)"
   fi
   log "ok: apply log has no hard failure markers"
 }

@@ -106,6 +106,10 @@ class WorkProfileTest(unittest.TestCase):
             "docker-compose-plugin",
         ):
             self.assertIn(package, dnf)
+        # Flathub app-id is com.getpostman.Postman (not com.postman.Postman).
+        flatpak = repo.manifest_entries(PERSONAL)["flatpak"]
+        self.assertIn("com.getpostman.Postman", flatpak)
+        self.assertNotIn("com.postman.Postman", flatpak)
 
     def test_work_and_personal_do_not_overlap(self) -> None:
         for backend in ("brew", "cask", "dnf", "flatpak", "winget"):
