@@ -4,7 +4,7 @@
 # intellij keymap hash: {{ include "dot_config/ide/intellij/DarculaCopy.xml" | sha256sum }}
 set -euo pipefail
 
-SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi/dot_config/ide}"
+SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/ide"
 if [ ! -d "$SRC_DIR" ]; then
   SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo .)"
   SRC_DIR="$SCRIPT_DIR/dot_config/ide"

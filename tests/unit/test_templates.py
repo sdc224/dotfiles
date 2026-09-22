@@ -112,6 +112,19 @@ class IdeKeysTemplateTest(unittest.TestCase):
         text = read("run_onchange_after_30-ide-keys.sh.tmpl")
         self.assertIn(".backup.", text)
 
+    def test_src_dir_appends_ide_subdir(self) -> None:
+        # Same CHEZMOI_SOURCE_DIR root regression as the package dispatcher:
+        # when set, it is the source root — must append /dot_config/ide.
+        text = read("run_onchange_after_30-ide-keys.sh.tmpl")
+        self.assertIn(
+            '${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/ide',
+            text,
+        )
+        self.assertNotIn(
+            '${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi/dot_config/ide}',
+            text,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
