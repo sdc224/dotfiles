@@ -23,9 +23,9 @@ SCRIPTS = [
     "run_onchange_after_35-skills.sh.tmpl",
     "run_onchange_after_36-rules.sh.tmpl",
     "run_once_after_40-enable-schedulers.sh.tmpl",
-    "dot_local/bin/dotfiles-sync",
-    "dot_local/bin/dotfiles-auto-update",
-    "dot_local/bin/dotfiles-doctor",
+    "dot_local/bin/executable_dotfiles-sync",
+    "dot_local/bin/executable_dotfiles-auto-update",
+    "dot_local/bin/executable_dotfiles-doctor",
 ]
 
 
@@ -124,7 +124,7 @@ class DispatcherScriptTest(unittest.TestCase):
 
 
 class SyncScriptTest(unittest.TestCase):
-    TEXT = read("dot_local/bin/dotfiles-sync")
+    TEXT = read("dot_local/bin/executable_dotfiles-sync")
 
     def test_check_flag_supported(self) -> None:
         self.assertIn("--check", self.TEXT)
@@ -148,7 +148,7 @@ class SyncScriptTest(unittest.TestCase):
 
 
 class AutoUpdateScriptTest(unittest.TestCase):
-    TEXT = read("dot_local/bin/dotfiles-auto-update")
+    TEXT = read("dot_local/bin/executable_dotfiles-auto-update")
 
     def test_staleness_guard(self) -> None:
         self.assertIn("STALE_DAYS=6", self.TEXT)
@@ -242,7 +242,7 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
 
 
 class DoctorScriptTest(unittest.TestCase):
-    TEXT = read("dot_local/bin/dotfiles-doctor")
+    TEXT = read("dot_local/bin/executable_dotfiles-doctor")
 
     @classmethod
     def code_text(cls) -> str:

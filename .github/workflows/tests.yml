@@ -60,9 +60,9 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck shfmt
           python -m pip install -q "ruff>=0.4"
       - name: shellcheck shipped scripts
-        run: shellcheck -S warning dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update dot_local/bin/dotfiles-doctor
+        run: shellcheck -S warning dot_local/bin/executable_dotfiles-sync dot_local/bin/executable_dotfiles-auto-update dot_local/bin/executable_dotfiles-doctor
       - name: shfmt formatting check (2-space indent, repo style)
-        run: shfmt -i 2 --diff dot_local/bin/dotfiles-sync dot_local/bin/dotfiles-auto-update dot_local/bin/dotfiles-doctor
+        run: shfmt -i 2 --diff dot_local/bin/executable_dotfiles-sync dot_local/bin/executable_dotfiles-auto-update dot_local/bin/executable_dotfiles-doctor
       - name: ruff lint (Rust-based, fastest)
         run: ruff check tests/
       - name: ruff format check
