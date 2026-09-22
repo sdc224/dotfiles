@@ -131,9 +131,17 @@ case "$OS" in
           fi
         fi
       fi
-      # Ghostty on Fedora comes from COPR (binary not in default repos).
+      # Ghostty on Fedora: scottames/ghostty COPR (documented by ghostty.org;
+      # ships current Fedora releases including F44 used by smoke).
       if ! command -v ghostty &>/dev/null; then
-        sudo dnf copr enable -y ghostty/ghostty 2>/dev/null && sudo dnf install -y ghostty || true
+        if ! rpm -q dnf-plugins-core &>/dev/null; then
+          sudo dnf install -y dnf-plugins-core || true
+        fi
+        if sudo dnf copr enable -y scottames/ghostty && sudo dnf install -y ghostty; then
+          echo "dispatcher: ghostty installed from scottames/ghostty COPR"
+        else
+          echo "dispatcher: ghostty COPR install failed (non-fatal; install manually)" >&2
+        fi
       fi
     fi
     if command -v flatpak &>/dev/null; then
