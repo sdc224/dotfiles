@@ -53,7 +53,7 @@ verify_personal() {
   assert_ok "docker-ce package present" rpm -q docker-ce
   assert_version "docker CLI" docker --version
 
-  # Ghostty via COPR (best-effort install in dispatcher; require binary)
+  # Ghostty via scottames/ghostty COPR (dispatcher; require binary)
   assert_ok "ghostty on PATH" command -v ghostty
 
   # Flatpak Postman (install may be heavy; require app ref listed)
