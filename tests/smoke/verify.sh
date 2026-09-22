@@ -10,8 +10,9 @@ verify_profile() {
   assert_file "$HOME/.zshrc"
   assert_file "$HOME/.config/mise/config.toml"
   assert_file "$HOME/.config/ghostty/config"
-  assert_file "$HOME/.local/bin/dotfiles-doctor"
-  assert_file "$HOME/.local/bin/dotfiles-sync"
+  assert_executable "$HOME/.local/bin/dotfiles-doctor"
+  assert_executable "$HOME/.local/bin/dotfiles-sync"
+  assert_executable "$HOME/.local/bin/dotfiles-auto-update"
 
   assert_version "git" git --version
   assert_version "zsh" zsh --version

@@ -494,7 +494,7 @@ class SyncCheckTest(unittest.TestCase):
         env = _base_env(bin_dir)
         env["CHEZMOI_SOURCE_DIR"] = str(REPO)
         return subprocess.run(
-            ["bash", str(REPO / "dot_local/bin/dotfiles-sync"), "--check"],
+            ["bash", str(REPO / "dot_local/bin/executable_dotfiles-sync"), "--check"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -539,7 +539,7 @@ class AutoUpdateTest(unittest.TestCase):
         env = _base_env(bin_dir)
         env["HOME"] = str(fake_home)
         proc = subprocess.run(
-            ["bash", str(REPO / "dot_local/bin/dotfiles-auto-update"), *args],
+            ["bash", str(REPO / "dot_local/bin/executable_dotfiles-auto-update"), *args],
             capture_output=True,
             text=True,
             timeout=120,
@@ -644,7 +644,7 @@ class DoctorTest(unittest.TestCase):
         env["CHEZMOI_SOURCE_DIR"] = str(REPO)
         env["DOCTOR_STATE"] = str(state)
         proc = subprocess.run(
-            ["bash", str(REPO / "dot_local/bin/dotfiles-doctor")],
+            ["bash", str(REPO / "dot_local/bin/executable_dotfiles-doctor")],
             capture_output=True,
             text=True,
             timeout=120,

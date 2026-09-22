@@ -366,8 +366,8 @@ python3 -m unittest discover -s tests/integration   # real chezmoi + stubbed pac
 
 ```bash
 # Shell (shipped CLIs)
-shellcheck -S warning dot_local/bin/dotfiles-{sync,auto-update,doctor}
-shfmt -i 2 --diff   dot_local/bin/dotfiles-{sync,auto-update,doctor}
+shellcheck -S warning dot_local/bin/executable_dotfiles-{sync,auto-update,doctor}
+shfmt -i 2 --diff   dot_local/bin/executable_dotfiles-{sync,auto-update,doctor}
 
 # Python tests
 pip install -r tests/requirements.txt
@@ -443,4 +443,4 @@ Then push, and on each machine: `chezmoi update -v`. Manifest hashes re-trigger 
 | `dot_config/skills/*` | `~/.config/skills` + IDE symlinks | Personal agent skills |
 | `dot_config/rules/*.mdc` | macOS Cursor/Claude; Fedora Antigravity | Profile-gated commit rules |
 | `dot_config/packages/*.toml` | (via dispatcher) | System packages by profile + OS backend |
-| `dot_local/bin/dotfiles-*` | `~/.local/bin/` | Doctor, sync, auto-update |
+| `dot_local/bin/executable_dotfiles-*` | `~/.local/bin/` | Doctor, sync, auto-update (chezmoi `executable_` attr) |
