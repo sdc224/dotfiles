@@ -19,7 +19,10 @@ lint are separate, opt-in quality gates (see below).
 
 ### Smoke (real installs — periodic)
 
-Full Fedora image × `{personal, work}` with real `dnf` / flatpak / mise:
+Full Fedora image × `{personal, work}`. Smoke is **first-contact**: it does
+not pre-seed converge packages. `run_once_before_00-bootstrap` owns gcc,
+python3, flatpak, fonts tooling, etc. Smoke only installs chezmoi (needs
+`curl`) and applies.
 
 ```bash
 # Needs Docker + network; mirrors CI
