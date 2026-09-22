@@ -26,7 +26,7 @@ packages = [
 packages = [
   # No Slack/Zoom here: not needed on personal. Postman kept as the
   # GUI API client; drop it if Hoppscotch/web clients cover you.
-  "com.postman.Postman",
+  "com.getpostman.Postman",
 ]
 
 [winget]

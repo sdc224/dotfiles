@@ -58,7 +58,7 @@ verify_personal() {
   # Flatpak Postman (install may be heavy; require app ref listed)
   if command -v flatpak &>/dev/null; then
     assert_ok "flatpak Postman installed" \
-      flatpak list --app --columns=application | grep -qx 'com.postman.Postman'
+      flatpak list --app --columns=application | grep -qx 'com.getpostman.Postman'
   else
     fail "flatpak missing after personal apply"
   fi
