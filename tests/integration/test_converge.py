@@ -539,7 +539,11 @@ class AutoUpdateTest(unittest.TestCase):
         env = _base_env(bin_dir)
         env["HOME"] = str(fake_home)
         proc = subprocess.run(
-            ["bash", str(REPO / "dot_local/bin/executable_dotfiles-auto-update"), *args],
+            [
+                "bash",
+                str(REPO / "dot_local/bin/executable_dotfiles-auto-update"),
+                *args,
+            ],
             capture_output=True,
             text=True,
             timeout=120,
