@@ -117,11 +117,11 @@ class IdeKeysTemplateTest(unittest.TestCase):
         # when set, it is the source root — must append /dot_config/ide.
         text = read("run_onchange_after_30-ide-keys.sh.tmpl")
         self.assertIn(
-            '${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/ide',
+            "${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/ide",
             text,
         )
         self.assertNotIn(
-            '${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi/dot_config/ide}',
+            "${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi/dot_config/ide}",
             text,
         )
 
