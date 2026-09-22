@@ -132,6 +132,13 @@ assert_file() {
   log "ok: path exists: $path"
 }
 
+assert_executable() {
+  local path="$1"
+  [ -e "$path" ] || fail "missing path: $path"
+  [ -x "$path" ] || fail "not executable: $path"
+  log "ok: executable: $path"
+}
+
 assert_log_clean() {
   local logf="$1"
   [ -f "$logf" ] || fail "apply log missing: $logf"

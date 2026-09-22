@@ -1,5 +1,8 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# Corporate Mac first-prompt can exceed the 500ms default (mise python + EPM).
+command_timeout = 1000
+
 format = """
 $directory\
 $git_branch\
