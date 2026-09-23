@@ -51,6 +51,9 @@ jobs:
           NONINTERACTIVE: "1"
           HOMEBREW_NO_AUTO_UPDATE: "1"
           HOMEBREW_NO_ENV_HINTS: "1"
+          # mise talks to api.github.com for tool releases; without a token
+          # shared runner IPs burn the 60/hr anonymous cap mid-install.
+          MISE_GITHUB_TOKEN: ${{ github.token }}
         run: bash tests/smoke/run.sh
 
       - name: Upload apply log

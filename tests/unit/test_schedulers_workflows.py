@@ -146,6 +146,10 @@ class SmokeWorkflowTest(unittest.TestCase):
     def test_not_on_pull_request(self) -> None:
         self.assertNotIn("pull_request", self.TEXT)
 
+    def test_passes_mise_github_token(self) -> None:
+        self.assertIn("MISE_GITHUB_TOKEN", self.TEXT)
+        self.assertIn("github.token", self.TEXT)
+
 
 class SmokeMacosWorkflowTest(unittest.TestCase):
     TEXT = read(".github/workflows/smoke-macos.yml")
@@ -171,6 +175,10 @@ class SmokeMacosWorkflowTest(unittest.TestCase):
 
     def test_separate_concurrency_group(self) -> None:
         self.assertIn("smoke-macos", self.TEXT)
+
+    def test_passes_mise_github_token(self) -> None:
+        self.assertIn("MISE_GITHUB_TOKEN", self.TEXT)
+        self.assertIn("github.token", self.TEXT)
 
 
 if __name__ == "__main__":
