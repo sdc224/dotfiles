@@ -19,26 +19,29 @@ lint are separate, opt-in quality gates (see below).
 
 ### Smoke (real installs — periodic)
 
-Full Fedora image × `{personal, work}`. Smoke is **first-contact**: it does
-not pre-seed converge packages. `run_once_before_00-bootstrap` owns gcc,
-python3, flatpak, fonts tooling, etc. Smoke only installs chezmoi (needs
-`curl`) and applies.
+Fedora container and macOS 26 × `{personal, work}`. Smoke is **first-contact**:
+it does not pre-seed converge packages. `run_once_before_00-bootstrap` owns
+gcc/python3/flatpak (Linux) or Homebrew (macOS). Smoke only installs chezmoi
+(needs `curl`) and applies.
 
 ```bash
-# Needs Docker + network; mirrors CI
+# Fedora via Docker (mirrors Fedora CI)
 ./tests/smoke/docker-run.sh personal
 ./tests/smoke/docker-run.sh work
 
-# Or inside an existing Fedora host/container:
+# On a real Fedora or macOS host:
 PROFILE=personal bash tests/smoke/run.sh
+PROFILE=work bash tests/smoke/run.sh
 ```
 
 CI writes a chezmoi config (answers prompts), links the checkout to
 `~/.local/share/chezmoi`, then `chezmoi apply` — it does **not** `git clone`
 the workspace (GHA Fedora images lack git at checkout time).
 
-CI: [`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml) — weekly
-(Thursday) + `workflow_dispatch`. Not on every PR (too heavy).
+CI (weekly Thursday + `workflow_dispatch`, not on every PR):
+
+- [`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml) — Fedora
+- [`.github/workflows/smoke-macos.yml`](../.github/workflows/smoke-macos.yml) — macOS 26
 
 ## Lint + format
 
@@ -78,7 +81,7 @@ job so `unit` stays fast (~0.2s, no `pip install`).
   `dotfiles-auto-update` staleness guard + status file, and
   `dotfiles-doctor` healthy/broken/scheduler/gh-required/log-evaluation
   against a fake HOME.
-- `tests/smoke/` — real Fedora install smoke (`run.sh` + `verify.sh`):
+- `tests/smoke/` — real Fedora + macOS install smoke (`run.sh` + `verify.sh`):
   non-interactive `chezmoi apply` (config written, source linked), log scan,
   then `node -v` / package / path assertions for personal and work (no MDM).
 
@@ -90,7 +93,7 @@ job so `unit` stays fast (~0.2s, no `pip install`).
 - **Integration**: every feature in [TEST_PLAN.md](TEST_PLAN.md) has at least
   one automated case on each OS branch that can run it; OS-specific branches
   skip with a reason locally and run in CI (`tests.yml` matrix:
-  `macos-15`, `ubuntu-24.04`, `fedora:latest` container).
+  `macos-26`, `ubuntu-24.04`, `fedora:latest` container).
 
 ## Work-profile assumptions under test
 

@@ -1,7 +1,7 @@
 # Integration test plan (OS × profile matrix)
 
 Every feature below is exercised for **work** (`is_work=true`) and
-**personal** (`is_work=false`) on **macOS 15 (arm64)** and **Fedora**.
+**personal** (`is_work=false`) on **macOS 26 (arm64)** and **Fedora**.
 Status `auto` = implemented in `tests/integration/test_converge.py` (stubbed
 package managers, real chezmoi + real scripts). Status `ci-only` = runs in
 the `tests.yml` matrix, skipped locally on the wrong OS. Status `manual` =
@@ -96,12 +96,17 @@ these installs.
 | Personal uses gh credential helper; work does not | auto (render both profiles) |
 | Rancher/ZIA shell sourcing work-only | auto (render both profiles) |
 
-## 9. Smoke (real Fedora install — weekly)
+## 9. Smoke (real install — weekly)
 
-Status `smoke` = `tests/smoke/run.sh` on a real `fedora:latest` image via
-[`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml) (schedule +
-manual). Package managers are **not** stubbed. Intelligent Hub / MDM apps are
-out of scope.
+Status `smoke` = `tests/smoke/run.sh` on real hosts via schedule + manual:
+
+- Fedora: [`.github/workflows/smoke.yml`](../.github/workflows/smoke.yml)
+  (`fedora:latest` container)
+- macOS: [`.github/workflows/smoke-macos.yml`](../.github/workflows/smoke-macos.yml)
+  (`macos-26` arm64)
+
+Package managers are **not** stubbed. Intelligent Hub / MDM apps are out of
+scope. Both workflows run Thursday 06:00 UTC (day after Wed brew/mise audit).
 
 | Case | personal | work | Status |
 |---|---|---|---|
@@ -109,14 +114,15 @@ out of scope.
 | Apply log has no hard failure markers | ✅ | ✅ | smoke |
 | Core mise tools respond (`node -v`, `rg`, `gh`, …) | ✅ | ✅ | smoke |
 | Managed paths exist (`.zshrc`, mise, ghostty, doctor) | ✅ | ✅ | smoke |
-| Personal dnf apps (`neovim`, `distrobox`, `docker-ce`) | ✅ | absent | smoke |
-| Flatpak Postman | ✅ | n/a | smoke |
-| Ghostty (COPR) on PATH | ✅ | shared-only | smoke |
+| Personal dnf apps (`neovim`, `distrobox`, `docker-ce`) | ✅ Fedora | absent | smoke |
+| Flatpak Postman | ✅ Fedora | n/a | smoke |
+| Ghostty (COPR) on PATH | ✅ Fedora | shared-only | smoke |
+| Shared brew formulae + casks (Ghostty, Cursor, fonts, …) | ✅ macOS | ✅ macOS | smoke |
+| Work brew/cask (`awscli`, `mysql`, IntelliJ, Toolbox, Postman) | absent macOS | ✅ macOS | smoke |
 | `kubectl` via mise | absent | ✅ | smoke |
-| Work DXS rule in `GEMINI.md` / personal rule otherwise | ✅ | ✅ | smoke |
+| Work DXS rule / personal rule (GEMINI on Linux; Cursor/Claude on macOS) | ✅ | ✅ | smoke |
 | IntelliJ keymap deploy (pre-seeded JetBrains dir) | absent | ✅ | smoke |
 | systemd `enable --now` for docker/timer | shimmed in CI | shimmed | smoke (host = manual) |
-| macOS brew/cask GUI apps (Cursor, IntelliJ, …) | — | — | manual (not in free Linux smoke) |
 
 ## Adding a new app? Update this plan
 
@@ -125,5 +131,6 @@ out of scope.
    (profile membership / MDM exclusion).
 3. If it changes install behaviour, extend `test_converge.py`
    (render or stub-call assertion for work + personal).
-4. If it should appear on a real Fedora host, extend `tests/smoke/verify.sh`.
+4. If it should appear on a real Fedora or macOS host, extend
+   `tests/smoke/verify.sh` (OS-specific helpers).
 5. Stubbed CI matrix picks it up automatically — no workflow edit needed.

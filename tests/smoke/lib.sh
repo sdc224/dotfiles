@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for Fedora smoke runs (real installs, no stubbed backends).
+# Shared helpers for real-install smoke runs (Fedora + macOS; no stubbed backends).
 # shellcheck shell=bash
 set -euo pipefail
 
@@ -7,11 +7,15 @@ SMOKE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SMOKE_ROOT/../.." && pwd)"
 SMOKE_LOG_DIR="${SMOKE_LOG_DIR:-/tmp/dotfiles-smoke}"
 SMOKE_APPLY_LOG="${SMOKE_APPLY_LOG:-$SMOKE_LOG_DIR/chezmoi-apply.log}"
+SMOKE_OS="$(uname -s)"
 
 mkdir -p "$SMOKE_LOG_DIR"
 
 log() { printf 'smoke: %s\n' "$*"; }
-fail() { printf 'smoke: FAIL: %s\n' "$*" >&2; exit 1; }
+fail() {
+  printf 'smoke: FAIL: %s\n' "$*" >&2
+  exit 1
+}
 
 require_cmd() {
   command -v "$1" &>/dev/null || fail "missing command: $1"
@@ -54,6 +58,20 @@ EOF
   fi
 }
 
+# GHA macos runners ship Homebrew; ensure shellenv for the current arch.
+ensure_brew_on_path() {
+  if command -v brew &>/dev/null; then
+    return 0
+  fi
+  if [ -x /opt/homebrew/bin/brew ]; then
+    # shellcheck disable=SC1091
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    # shellcheck disable=SC1091
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+}
+
 write_smoke_config() {
   # Pre-answer .chezmoi.toml.tmpl prompts without chezmoi init (CI checkouts
   # often lack a usable .git, so `chezmoi init <path>` fails with git clone).
@@ -79,6 +97,17 @@ link_source_dir() {
   mkdir -p "$HOME/.local/share"
   ln -sfn "$REPO_ROOT" "$HOME/.local/share/chezmoi"
   log "source -> $HOME/.local/share/chezmoi (-> $REPO_ROOT)"
+}
+
+# ide-keys only copies the IntelliJ keymap into an existing product directory.
+preseed_jetbrains_for_work() {
+  local profile="$1"
+  [ "$profile" = "work" ] || return 0
+  if [ "$SMOKE_OS" = "Darwin" ]; then
+    mkdir -p "$HOME/Library/Application Support/JetBrains/IntelliJIdeaSmoke/keymaps"
+  else
+    mkdir -p "$HOME/.config/JetBrains/IntelliJIdeaSmoke/keymaps"
+  fi
 }
 
 activate_mise() {
@@ -139,6 +168,32 @@ assert_executable() {
   log "ok: executable: $path"
 }
 
+assert_brew_formula() {
+  local pkg="$1"
+  assert_ok "brew formula $pkg" brew list --formula "$pkg"
+}
+
+assert_brew_cask() {
+  local cask="$1"
+  assert_ok "brew cask $cask" brew list --cask "$cask"
+}
+
+assert_no_brew_formula() {
+  local pkg="$1"
+  if brew list --formula "$pkg" &>/dev/null; then
+    fail "brew formula '$pkg' should not be installed for this profile"
+  fi
+  log "ok: brew formula $pkg absent"
+}
+
+assert_no_brew_cask() {
+  local cask="$1"
+  if brew list --cask "$cask" &>/dev/null; then
+    fail "brew cask '$cask' should not be installed for this profile"
+  fi
+  log "ok: brew cask $cask absent"
+}
+
 assert_log_clean() {
   local logf="$1"
   [ -f "$logf" ] || fail "apply log missing: $logf"
@@ -151,8 +206,8 @@ assert_log_clean() {
   hits="$(
     grep -Ev '^[+-]' "$logf" |
       grep -Ei \
-        'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' \
-      || true
+        'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' ||
+      true
   )"
   if [ -n "$hits" ]; then
     printf '%s\n' "$hits" | head -n 40 >&2

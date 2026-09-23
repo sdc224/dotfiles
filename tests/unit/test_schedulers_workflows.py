@@ -77,7 +77,7 @@ class AuditWorkflowTest(unittest.TestCase):
         self.assertIn("* * 3", self.TEXT)
 
     def test_arm64_mac_runner(self) -> None:
-        self.assertIn("macos-15", self.TEXT)
+        self.assertIn("macos-26", self.TEXT)
 
     def test_fedora_container_check(self) -> None:
         self.assertIn("fedora", self.TEXT.lower())
@@ -109,7 +109,7 @@ class TestsWorkflowTest(unittest.TestCase):
         self.assertIn("coverage", self.TEXT)
 
     def test_matrix_covers_mac_and_linux(self) -> None:
-        self.assertIn("macos-15", self.TEXT)
+        self.assertIn("macos-26", self.TEXT)
         self.assertIn("ubuntu-24.04", self.TEXT)
 
     def test_fedora_container_job_exists(self) -> None:
@@ -134,6 +134,9 @@ class SmokeWorkflowTest(unittest.TestCase):
         self.assertIn("schedule:", self.TEXT)
         self.assertIn("workflow_dispatch:", self.TEXT)
 
+    def test_thursday_schedule(self) -> None:
+        self.assertIn("* * 4", self.TEXT)
+
     def test_fedora_matrix_both_profiles(self) -> None:
         self.assertIn("fedora:latest", self.TEXT)
         self.assertIn("personal", self.TEXT)
@@ -142,6 +145,32 @@ class SmokeWorkflowTest(unittest.TestCase):
 
     def test_not_on_pull_request(self) -> None:
         self.assertNotIn("pull_request", self.TEXT)
+
+
+class SmokeMacosWorkflowTest(unittest.TestCase):
+    TEXT = read(".github/workflows/smoke-macos.yml")
+
+    def test_scheduled_and_manual(self) -> None:
+        self.assertIn("schedule:", self.TEXT)
+        self.assertIn("workflow_dispatch:", self.TEXT)
+
+    def test_thursday_schedule(self) -> None:
+        # Same day as Fedora smoke; day after Wed brew/mise audit.
+        self.assertIn("* * 4", self.TEXT)
+
+    def test_arm64_mac_runner(self) -> None:
+        self.assertIn("macos-26", self.TEXT)
+
+    def test_matrix_both_profiles(self) -> None:
+        self.assertIn("personal", self.TEXT)
+        self.assertIn("work", self.TEXT)
+        self.assertIn("tests/smoke/run.sh", self.TEXT)
+
+    def test_not_on_pull_request(self) -> None:
+        self.assertNotIn("pull_request", self.TEXT)
+
+    def test_separate_concurrency_group(self) -> None:
+        self.assertIn("smoke-macos", self.TEXT)
 
 
 if __name__ == "__main__":
