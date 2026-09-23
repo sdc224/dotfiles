@@ -232,7 +232,10 @@ class DispatcherExecutionTest(unittest.TestCase):
             self.skipTest("brew/cask dispatch branch needs macOS")
         calls = self._run_dispatcher("work")
         self.assertIn("awscli", calls)
-        self.assertIn("intellij-idea", calls)
+        self.assertIn("jetbrains-toolbox", calls)
+        self.assertNotIn("intellij-idea", calls)
+        self.assertNotIn("windsurf", calls)
+        self.assertNotIn("devin-desktop", calls)
 
     def test_personal_dispatch_does_not_install_work_packages(self) -> None:
         if not IS_DARWIN:
@@ -240,6 +243,7 @@ class DispatcherExecutionTest(unittest.TestCase):
         calls = self._run_dispatcher("personal")
         self.assertNotIn("awscli", calls)
         self.assertNotIn("intellij-idea", calls)
+        self.assertNotIn("jetbrains-toolbox", calls)
 
     def test_existing_unmanaged_cask_app_skips_download(self) -> None:
         if not IS_DARWIN:
@@ -480,9 +484,9 @@ class SyncCheckTest(unittest.TestCase):
             bin_dir,
             "brew",
             f'if [ "$1 $2" = "list --formula" ]; then printf "{brews}\\n"; exit 0; fi\n'
-            'if [ "$1 $2" = "list --cask" ]; then printf "ghostty\\nvisual-studio-code\\ncursor\\nwindsurf\\n'
+            'if [ "$1 $2" = "list --cask" ]; then printf "ghostty\\nvisual-studio-code\\ncursor\\n'
             "font-jetbrains-mono-nerd-font\\nfont-meslo-lg-nerd-font\\n"
-            'intellij-idea\\njetbrains-toolbox\\npostman\\n"; exit 0; fi\nexit 0',
+            'jetbrains-toolbox\\npostman\\n"; exit 0; fi\nexit 0',
         )
         write_stub(
             bin_dir,

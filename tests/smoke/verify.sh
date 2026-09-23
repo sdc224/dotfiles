@@ -89,9 +89,10 @@ verify_macos_common() {
   assert_brew_cask ghostty
   assert_brew_cask visual-studio-code
   assert_brew_cask cursor
-  assert_brew_cask windsurf
   assert_brew_cask font-jetbrains-mono-nerd-font
   assert_brew_cask font-meslo-lg-nerd-font
+  assert_no_brew_cask windsurf
+  assert_no_brew_cask devin-desktop
 }
 
 verify_linux_personal() {
@@ -188,9 +189,9 @@ verify_macos_work() {
 
   assert_brew_formula awscli
   assert_brew_formula mysql
-  assert_brew_cask intellij-idea
   assert_brew_cask jetbrains-toolbox
   assert_brew_cask postman
+  assert_no_brew_cask intellij-idea
 
   assert_file "$HOME/.cursor/rules/commit-pr-jira.mdc"
   if [ -e "$HOME/.cursor/rules/personal-commits.mdc" ]; then

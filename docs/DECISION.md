@@ -11,8 +11,8 @@
 #    Yes -> generic manifests:
 #      macOS: dot_config/packages/shared.toml or work.toml [cask] / [brew]
 #      Fedora: [dnf] / [flatpak]  |  Windows: [winget]
-#    Examples: ghostty, vscode, cursor, windsurf, fonts, postman,
-#    intellij-idea (work only), docker CLI, duti.
+#    Examples: ghostty, vscode, cursor, fonts, postman,
+#    jetbrains-toolbox (work only; IntelliJ via Toolbox), docker CLI, duti.
 #    (slack, zoom, rancher-desktop are MDM-provided, never in manifests.)
 #    Docker Engine is a Fedora-only exception: its daemon, container runtime,
 #    and matching CLI require DNF packages plus a system service. Do not split

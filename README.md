@@ -140,7 +140,7 @@ One manifest set; the dispatcher picks the section for the host:
 | File | When |
 |---|---|
 | `dot_config/packages/shared.toml` | Always (editors, terminal, browsers, shared CLIs, …) |
-| `dot_config/packages/work.toml` | `is_work` — e.g. awscli, mysql, IntelliJ, Postman |
+| `dot_config/packages/work.toml` | `is_work` — e.g. awscli, mysql, JetBrains Toolbox, Postman |
 | `dot_config/packages/personal.toml` | `!is_work` — e.g. neovim, distrobox (Linux), personal extras |
 
 Runtimes and cross-platform CLIs stay in **mise**, not in these backends. That is what keeps Windows (and any future OS) cheap to add: same mise config, new/expanded winget (or other) rows only for GUI/OS packages.

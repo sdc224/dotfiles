@@ -19,11 +19,12 @@ casks = [
   "ghostty",
   "visual-studio-code",
   "cursor",
-  "windsurf",
   "font-jetbrains-mono-nerd-font",
   "font-meslo-lg-nerd-font",
   # Browsers are delivered by Intelligent Hub on work machines. Keep them
   # outside dotfiles so setup neither requests elevation nor replaces MDM apps.
+  # Windsurf rebranded to Devin Desktop (brew cask token devin-desktop) —
+  # not installed here; install by hand if you want it.
 ]
 
 [dnf]
