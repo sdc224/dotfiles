@@ -5,9 +5,10 @@ to finalize in `dot_config/packages/personal.toml` ([dnf] / [flatpak]).
 
 - Converge: `chezmoi update -v` (bootstrap installs OS primitives on first
   apply; dispatcher then installs dnf + flatpak + mise tools).
-- Ghostty: installed from the `scottames/ghostty` COPR (the COPR Ghostty
-  documents) by the dispatcher when missing. Same `dot_config/ghostty/config`
-  as macOS, including Ctrl-C copy-or-interrupt and Shift+Insert paste parity.
+- Ghostty: dispatcher drops the `scottames/ghostty` COPR `.repo` file
+  (the COPR Ghostty documents; works without `dnf copr` in containers) and
+  installs the package when missing. Same `dot_config/ghostty/config` as
+  macOS, including Ctrl-C copy-or-interrupt and Shift+Insert paste parity.
 - Auto-update: `systemd --user enable --now dotfiles-update.timer`
   (also enabled once by `run_once_after_40-enable-schedulers`). GNOME Software
   owns unattended DNF upgrades, including Docker Engine from Docker's official
