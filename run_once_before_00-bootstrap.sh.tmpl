@@ -68,7 +68,21 @@ if ! command -v mise &>/dev/null && [ ! -x "$HOME/.local/bin/mise" ]; then
   echo "bootstrap: installing mise..."
   curl --retry 5 --retry-delay 2 --retry-all-errors -fsSL https://mise.run | sh
 fi
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+# Python 3.11+ (tomllib) for the package dispatcher. Linux installs a distro
+# python3 above; Apple /usr/bin/python3 is 3.9 and has no tomllib. Install via
+# mise here (never brew — docs/DECISION.md) so run_onchange_after_10 can parse
+# manifests before the full mise toolset lands in step 20.
+if ! python3 -c 'import tomllib' 2>/dev/null; then
+  echo "bootstrap: installing python via mise (dispatcher needs 3.11+/tomllib)..."
+  mise install python@latest --yes
+  hash -r || true
+  if ! python3 -c 'import tomllib' 2>/dev/null; then
+    echo "bootstrap: ERROR: python3 still lacks tomllib after mise install" >&2
+    exit 1
+  fi
+fi
 
 # zinit (zsh plugin manager, turbo mode).
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
