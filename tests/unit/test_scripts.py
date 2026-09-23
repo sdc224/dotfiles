@@ -121,9 +121,11 @@ class DispatcherScriptTest(unittest.TestCase):
 
     def test_requires_tomllib_and_prefers_mise_shims(self) -> None:
         # Regression: macOS apply used Apple python3.9 → No module named tomllib.
+        # Install alone does not activate; must prepend `mise where …/bin`.
         self.assertIn("mise/shims", self.TEXT)
         self.assertIn("import tomllib", self.TEXT)
         self.assertIn("mise install python@latest", self.TEXT)
+        self.assertIn("mise where python@latest", self.TEXT)
 
     def test_skips_existing_unmanaged_cask_payloads(self) -> None:
         self.assertIn("cask_payload_exists", self.TEXT)
@@ -255,10 +257,19 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
     def test_bootstrap_ensures_tomllib_python_via_mise(self) -> None:
         # macOS ships /usr/bin/python3 3.9 (no tomllib). Dispatcher needs 3.11+.
         # Never brew python — docs/DECISION.md; mise owns the runtime.
+        # `mise install` alone does not activate shims — must use `mise where`.
         text = read("run_once_before_00-bootstrap.sh.tmpl")
         self.assertIn("import tomllib", text)
         self.assertIn("mise install python@latest", text)
-        self.assertIn("mise/shims", text)
+        self.assertIn("mise where python@latest", text)
+        self.assertIn("ensure_tomllib_python", text)
+
+    def test_bootstrap_prefers_existing_brew_before_installer(self) -> None:
+        # Work Macs: CyberArk EPM often blocks sudo; IT may already ship brew.
+        text = read("run_once_before_00-bootstrap.sh.tmpl")
+        self.assertIn("/opt/homebrew/bin/brew", text)
+        self.assertIn("NONINTERACTIVE=1", text)
+        self.assertIn("Work Macs without admin", text)
 
     def test_bootstrap_installs_nerd_fonts_linux(self) -> None:
         text = read("run_once_before_00-bootstrap.sh.tmpl")

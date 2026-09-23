@@ -89,6 +89,18 @@ fix_scheduler() {
 
 say "== dotfiles-doctor: $OS (repo: $REPO) =="
 
+# 0. Config must be readable — a leftover root-owned / ACL-locked
+# ~/.config/chezmoi/chezmoi.toml makes every `chezmoi init/apply` fail with
+# "permission denied" before any hook runs.
+CFG="$HOME/.config/chezmoi/chezmoi.toml"
+if [ -e "$CFG" ]; then
+  if [ -r "$CFG" ]; then
+    ok "chezmoi.toml readable"
+  else
+    fail "chezmoi.toml exists but is not readable (fix: ls -la ~/.config/chezmoi; or move it aside and re-init)"
+  fi
+fi
+
 # 1. Profile: who does chezmoi think this machine is? Parsed from the
 # chezmoi config file directly (execute-template would error on older
 # configs that predate newer prompts like install_intellij).

@@ -6,6 +6,8 @@
 set -euo pipefail
 # Chezmoi scripts inherit a minimal PATH; mise shims / ~/.local/bin are not
 # guaranteed. Bootstrap installs python via mise on macOS for tomllib (3.11+).
+# `mise install` alone does not activate shims without a config entry — prepend
+# the install bin from `mise where` when Apple/system python3 is too old.
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
 SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/packages"
@@ -25,11 +27,16 @@ if ! command -v python3 &>/dev/null; then
   echo "dispatcher: python3 required to parse manifests, skipping" >&2
   exit 0
 fi
-# Apple /usr/bin/python3 is 3.9 (no tomllib). Prefer mise python; install if needed.
 if ! python3 -c 'import tomllib' 2>/dev/null; then
   if command -v mise &>/dev/null; then
     echo "dispatcher: python3 lacks tomllib; installing via mise..." >&2
     mise install python@latest --yes
+    _py_root=""
+    _py_root="$(mise where python@latest 2>/dev/null)" || _py_root=""
+    if [ -n "${_py_root}" ] && [ -d "$_py_root/bin" ]; then
+      export PATH="$_py_root/bin:$PATH"
+    fi
+    unset _py_root
     hash -r || true
   fi
 fi

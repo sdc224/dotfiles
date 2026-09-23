@@ -351,6 +351,9 @@ Checks profile, chezmoi install/source/drift, mise, package backends, scheduler 
 | IDE keys / skills / rules stale | Edit the source under `dot_config/` and `chezmoi apply` (hash lines re-trigger scripts 30/35/36). |
 | Terminal / GUI missing | Check the OS backend section in the package TOMLs and re-run the dispatcher via `chezmoi apply`. |
 | Work tools on personal (or reverse) | Check `~/.config/chezmoi/chezmoi.toml` → `is_work` / `install_intellij`. Doctor prints the profile. |
+| `permission denied` on `chezmoi.toml` | Leftover unreadable `~/.config/chezmoi` (ownership/ACL). `ls -la ~/.config/chezmoi`, fix ownership or move it aside, then re-init. |
+| Bootstrap: `python3 still lacks tomllib` | Fixed by putting `mise where python@latest`/bin on PATH after install. Pull latest + `chezmoi apply -v`. |
+| Homebrew: no Admin rights (work Mac) | CyberArk EPM. Prefer IT-provided `/opt/homebrew`, or ask an admin to finish the installer once. |
 | Installer polluted `~/.zshrc` | Move the snippet to `~/.zsh_local`, then `chezmoi apply` to restore the managed file. |
 
 ### Useful inspection commands
