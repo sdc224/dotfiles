@@ -5,11 +5,11 @@ set -euo pipefail
 
 PROFILE="${1:-}"
 case "$PROFILE" in
-  personal | work) ;;
-  *)
-    echo "usage: $0 personal|work" >&2
-    exit 2
-    ;;
+personal | work) ;;
+*)
+  echo "usage: $0 personal|work" >&2
+  exit 2
+  ;;
 esac
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
