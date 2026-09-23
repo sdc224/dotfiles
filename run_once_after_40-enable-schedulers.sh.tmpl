@@ -6,13 +6,12 @@ OS="$(uname -s)"
 if [ "$OS" = "Darwin" ]; then
   PLIST="$HOME/Library/LaunchAgents/com.dotfiles.update.plist"
   if [ -f "$PLIST" ]; then
-    launchctl bootout "gui/$(id -u)/$(
-      /usr/bin/plutil -extract Label raw "$PLIST" 2>/dev/null || echo com.dotfiles.update
-    )" 2>/dev/null || true
+    LABEL="$(/usr/bin/plutil -extract Label raw "$PLIST" 2>/dev/null || echo com.dotfiles.update)"
+    launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
     launchctl bootstrap "gui/$(id -u)" "$PLIST"
-    # Verify loudly: a scheduler that silently failed to load leaves the
-    # machine without weekly updates and nobody finds out (doctor re-checks).
-    launchctl list | grep -q com.dotfiles.update
+    # Verify via print (not `list | grep -q`): under pipefail, grep -q closes
+    # the pipe early → SIGPIPE 141 exactly when the job *is* loaded.
+    launchctl print "gui/$(id -u)/$LABEL" &>/dev/null
     echo "schedulers: launchd weekly update enabled and verified (Wed 10:00)"
   fi
 elif [ "$OS" = "Linux" ]; then
