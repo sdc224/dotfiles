@@ -13,6 +13,7 @@ verify_profile() {
   assert_executable "$HOME/.local/bin/dotfiles-doctor"
   assert_executable "$HOME/.local/bin/dotfiles-sync"
   assert_executable "$HOME/.local/bin/dotfiles-auto-update"
+  assert_executable "$HOME/.local/bin/dotfiles-init"
 
   assert_version "git" git --version
   assert_version "zsh" zsh --version

@@ -39,8 +39,18 @@ The same flow on every OS. Profile (`is_work`) and OS backends are chosen at ini
 ### Bootstrap
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply https://github.com/sdc224/dotfiles.git
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply --no-tty -v https://github.com/sdc224/dotfiles.git
 ```
+
+`--no-tty` uses ordinary line prompts that **echo what you type** and show
+choices inline (e.g. `Machine profile (work/personal, default work)?`).
+Press **Enter** alone to keep the default, or a unique prefix (`w` / `p`).
+Without `--no-tty`, chezmoi’s TTY UI can hide keystrokes in some terminals.
+
+`chezmoi init --apply` does **not** reinstall packages every time. On a machine
+that is already converged it may only rewrite `chezmoi.toml` (or print almost
+nothing). Package/mise/keymap hooks are `run_onchange_*` and re-run when their
+sources change. That quiet finish is success, not a hang.
 
 The command installs Chezmoi and clones/applies this repository automatically;
 you do not clone it separately. Its first hook installs the missing platform
@@ -48,13 +58,21 @@ tools: Homebrew on macOS, or OS packages via dnf/apt on Linux. The Homebrew
 installer detects the current CPU itself: Apple Silicon uses `/opt/homebrew`;
 Intel uses `/usr/local`.
 
-Prompts:
+Prompts (type the value, then Enter; empty keeps the default). Esc / Ctrl+C
+cancels init with no message.
 
-| Prompt | Meaning |
-|---|---|
-| Git name / email | Written into templated git config |
-| `is_work` | Work vs personal **profile** (packages, rules, gated tools). Default follows the host OS today; override freely. |
-| `install_intellij` | Whether to deploy IntelliJ keymap / related bits independent of profile |
+| Prompt | Choices | Meaning |
+|---|---|---|
+| Git name / email | free text | Written into templated git config |
+| Machine profile | `work` / `personal` | Sets `is_work` (packages, rules, gated tools). Default: `work` on macOS, `personal` elsewhere. |
+| IntelliJ IDEA keymap | `install` / `skip` | Sets `install_intellij`. Default follows the profile (`install` on work, `skip` on personal). |
+
+After the first apply, prefer **`dotfiles-init`** for re-init (defaults are
+pre-filled in the input — press Enter to keep them — then a decision summary):
+
+```bash
+dotfiles-init          # readline defaults + summary, then chezmoi init --apply -v
+```
 
 Then verify:
 
@@ -72,6 +90,7 @@ dotfiles-sync --check   # expect clean
 |---|---|
 | `chezmoi update -v` | Pull latest + re-converge packages/mise/configs |
 | `dotfiles-doctor` | Interactive health check; fixes safe issues |
+| `dotfiles-init` | Re-run init prompts with echo + summary, then apply |
 | `mise upgrade` | Bump all mise-owned tools |
 | `reload` | Restart the shell (`exec zsh`) |
 
@@ -366,8 +385,8 @@ python3 -m unittest discover -s tests/integration   # real chezmoi + stubbed pac
 
 ```bash
 # Shell (shipped CLIs)
-shellcheck -S warning dot_local/bin/executable_dotfiles-{sync,auto-update,doctor}
-shfmt -i 2 --diff   dot_local/bin/executable_dotfiles-{sync,auto-update,doctor}
+shellcheck -S warning dot_local/bin/executable_dotfiles-{sync,auto-update,doctor,init}
+shfmt -i 2 --diff   dot_local/bin/executable_dotfiles-{sync,auto-update,doctor,init}
 
 # Python tests
 pip install -r tests/requirements.txt
@@ -394,6 +413,7 @@ Full guide: [`docs/TESTING.md`](docs/TESTING.md). Feature matrix: [`docs/TEST_PL
 | Binary | Role |
 |---|---|
 | `dotfiles-doctor` | Interactive verify + safe fixes |
+| `dotfiles-init` | Re-init with echoed prompts + decision summary |
 | `dotfiles-sync` | Diff machine vs manifests; optional PR for drift |
 | `dotfiles-auto-update` | Unattended weekly upgrade + sync check |
 
@@ -443,4 +463,4 @@ Then push, and on each machine: `chezmoi update -v`. Manifest hashes re-trigger 
 | `dot_config/skills/*` | `~/.config/skills` + IDE symlinks | Personal agent skills |
 | `dot_config/rules/*.mdc` | macOS Cursor/Claude; Fedora Antigravity | Profile-gated commit rules |
 | `dot_config/packages/*.toml` | (via dispatcher) | System packages by profile + OS backend |
-| `dot_local/bin/executable_dotfiles-*` | `~/.local/bin/` | Doctor, sync, auto-update (chezmoi `executable_` attr) |
+| `dot_local/bin/executable_dotfiles-*` | `~/.local/bin/` | Doctor, init, sync, auto-update (chezmoi `executable_` attr) |
