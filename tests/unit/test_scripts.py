@@ -74,6 +74,27 @@ class ShellSyntaxTest(unittest.TestCase):
             self.assertTrue(read(script).startswith("#!/usr/bin/env bash"), script)
 
 
+class MiseInstallScriptTest(unittest.TestCase):
+    TEXT = read("run_onchange_after_20-mise-install.sh.tmpl")
+
+    def test_reruns_on_mise_config_hash(self) -> None:
+        self.assertIn("config.toml.tmpl", self.TEXT)
+        self.assertIn("sha256sum", self.TEXT)
+
+    def test_prefers_ci_github_token_before_gh_auth(self) -> None:
+        # Fresh smoke has no `gh auth`; CI must supply MISE_GITHUB_TOKEN.
+        self.assertIn("MISE_GITHUB_TOKEN", self.TEXT)
+        self.assertIn("GITHUB_TOKEN", self.TEXT)
+        self.assertIn("gh auth token", self.TEXT)
+        self.assertLess(
+            self.TEXT.index("MISE_GITHUB_TOKEN"),
+            self.TEXT.index("gh auth token"),
+        )
+
+    def test_runs_mise_install_yes(self) -> None:
+        self.assertIn("mise install --yes", self.TEXT)
+
+
 class DispatcherScriptTest(unittest.TestCase):
     TEXT = read("run_onchange_after_10-install-packages.sh.tmpl")
 
