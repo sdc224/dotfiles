@@ -21,7 +21,7 @@ jobs:
     # Hot path: zero dependencies, stdlib only. Fast correctness signal.
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        os: [ubuntu-24.04, macos-26]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -71,7 +71,7 @@ jobs:
       # the integration jobs, which run the real templates per profile.
 
   integration-mac:
-    runs-on: macos-15 # arm64, matches the work fleet
+    runs-on: macos-26 # arm64 Tahoe, matches the work fleet
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5

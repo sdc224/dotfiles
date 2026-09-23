@@ -1,0 +1,62 @@
+name: Smoke (macOS real install)
+
+# Full-system smoke: macos-26 × {personal, work} with real Homebrew + casks.
+# Not on every PR — too slow / heavy. Weekly + manual only.
+# Stays on GitHub Actions (free for public repos).
+
+on:
+  schedule:
+    # Thursday 06:00 UTC — same day as Fedora smoke; day after Wed brew/mise audit
+    - cron: "0 6 * * 4"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Profile to smoke (or both)"
+        type: choice
+        options:
+          - both
+          - personal
+          - work
+        default: both
+
+concurrency:
+  group: smoke-macos
+  cancel-in-progress: false
+
+jobs:
+  smoke-macos:
+    name: macOS ${{ matrix.profile }}
+    runs-on: macos-26
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.profile != 'both' && fromJSON(format('["{0}"]', github.event.inputs.profile)) || fromJSON('["personal", "work"]') }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Free disk space
+        run: |
+          # Large casks (IDEA, Cursor, …) need headroom on GHA macOS images.
+          df -h /
+          brew cleanup -s || true
+          rm -rf "$(brew --cache)" || true
+          df -h /
+
+      - name: Run smoke (real chezmoi apply)
+        env:
+          PROFILE: ${{ matrix.profile }}
+          # Keep logs outside the chezmoi source tree.
+          SMOKE_LOG_DIR: /tmp/dotfiles-smoke-logs
+          NONINTERACTIVE: "1"
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_ENV_HINTS: "1"
+        run: bash tests/smoke/run.sh
+
+      - name: Upload apply log
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: smoke-macos-${{ matrix.profile }}-logs
+          path: /tmp/dotfiles-smoke-logs/
+          if-no-files-found: ignore
