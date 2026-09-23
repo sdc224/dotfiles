@@ -5,7 +5,7 @@ dispatcher, dotfiles-sync, dotfiles-auto-update) with stubbed package
 managers, so they verify end-to-end behaviour without touching the host.
 
 Matrix intent (see docs/TEST_PLAN.md): CI runs this file on
-  macos-15 x {work, personal} and fedora container x {work, personal}.
+  macos-26 x {work, personal} and fedora container x {work, personal}.
 Locally it exercises the branch matching the current OS; OS-specific
 branches are skipped with a clear reason.
 """

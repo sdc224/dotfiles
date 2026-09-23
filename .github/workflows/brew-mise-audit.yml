@@ -10,7 +10,7 @@ on:
 
 jobs:
   audit-mac:
-    runs-on: macos-15  # arm64 runner, matches M4 fleet
+    runs-on: macos-26  # arm64 Tahoe, matches M4 fleet
     steps:
       - uses: actions/checkout@v5
       - name: Set up Homebrew
