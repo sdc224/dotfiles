@@ -131,16 +131,26 @@ case "$OS" in
           fi
         fi
       fi
-      # Ghostty on Fedora: scottames/ghostty COPR (documented by ghostty.org;
-      # ships current Fedora releases including F44 used by smoke).
+      # Ghostty on Fedora: scottames/ghostty COPR (documented by ghostty.org).
+      # Drop the .repo file directly — `dnf copr` needs dnf5-command(copr),
+      # which minimal/container images often lack; the repo URL does not.
       if ! command -v ghostty &>/dev/null; then
-        if ! rpm -q dnf-plugins-core &>/dev/null; then
-          sudo dnf install -y dnf-plugins-core || true
+        # shellcheck source=/dev/null
+        . /etc/os-release
+        _ghostty_repo="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:scottames:ghostty.repo"
+        if [ ! -f "$_ghostty_repo" ]; then
+          curl -fsSL \
+            "https://copr.fedorainfracloud.org/coprs/scottames/ghostty/repo/fedora-${VERSION_ID}/scottames-ghostty-fedora-${VERSION_ID}.repo" |
+            sudo tee "$_ghostty_repo" >/dev/null || true
         fi
-        if sudo dnf copr enable -y scottames/ghostty && sudo dnf install -y ghostty; then
+        unset _ghostty_repo
+        sudo rpm --import \
+          https://download.copr.fedorainfracloud.org/results/scottames/ghostty/pubkey.gpg \
+          2>/dev/null || true
+        if sudo dnf install -y ghostty; then
           echo "dispatcher: ghostty installed from scottames/ghostty COPR"
         else
-          echo "dispatcher: ghostty COPR install failed (non-fatal; install manually)" >&2
+          echo "dispatcher: ghostty COPR install skipped (non-fatal; install manually)" >&2
         fi
       fi
     fi
