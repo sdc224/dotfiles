@@ -147,7 +147,13 @@ case "$OS" in
         sudo rpm --import \
           https://download.copr.fedorainfracloud.org/results/scottames/ghostty/pubkey.gpg \
           2>/dev/null || true
-        if sudo dnf install -y ghostty; then
+        # Skip fedora-cisco-openh264: codecs.fedoraproject.org often times out in
+        # CI (Curl error 28) and aborts the whole transaction; Ghostty runs fine
+        # without that weak codec dep.
+        if sudo dnf install -y \
+          --disablerepo=fedora-cisco-openh264 \
+          --setopt=install_weak_deps=False \
+          ghostty; then
           echo "dispatcher: ghostty installed from scottames/ghostty COPR"
         else
           echo "dispatcher: ghostty COPR install skipped (non-fatal; install manually)" >&2
