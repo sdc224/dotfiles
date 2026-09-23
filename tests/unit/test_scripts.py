@@ -262,7 +262,10 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         # Install steps own correctness: enable must be followed by a
         # verification that fails the run instead of swallowing errors.
         text = read("run_once_after_40-enable-schedulers.sh.tmpl")
-        self.assertIn("launchctl list | grep -q com.dotfiles.update", text)
+        # launchctl print (not list|grep -q): pipefail + grep -q → SIGPIPE 141
+        # exactly when the job is loaded.
+        self.assertIn('launchctl print "gui/$(id -u)/$LABEL"', text)
+        self.assertNotIn("launchctl list | grep -q", text)
         self.assertIn("systemctl --user is-enabled dotfiles-update.timer", text)
         self.assertNotIn(
             'launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null', text
