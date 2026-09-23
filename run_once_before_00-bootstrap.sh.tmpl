@@ -9,15 +9,62 @@ set -euo pipefail
 
 OS="$(uname -s)"
 
+# Put mise + shims early; brew shellenv may prepend further below.
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+# Ensure Python 3.11+ (tomllib) is the `python3` on PATH.
+# Apple /usr/bin/python3 is 3.9. `mise install` alone does NOT activate shims
+# until the tool is named in a config file (chezmoi applies mise config in a
+# later step) — so we prepend `mise where …/bin` after install.
+ensure_tomllib_python() {
+  if python3 -c 'import tomllib' 2>/dev/null; then
+    return 0
+  fi
+  if ! command -v mise &>/dev/null; then
+    echo "bootstrap: ERROR: mise required to install Python 3.11+ (tomllib)" >&2
+    return 1
+  fi
+  echo "bootstrap: installing python via mise (dispatcher needs 3.11+/tomllib)..."
+  mise install python@latest --yes
+  local py_root=""
+  py_root="$(mise where python@latest 2>/dev/null)" || py_root=""
+  if [ -n "$py_root" ] && [ -d "$py_root/bin" ]; then
+    export PATH="$py_root/bin:$PATH"
+  fi
+  hash -r || true
+  if ! python3 -c 'import tomllib' 2>/dev/null; then
+    echo "bootstrap: ERROR: python3 still lacks tomllib after mise install" >&2
+    echo "bootstrap: hint: mise where -> ${py_root:-unset}" >&2
+    return 1
+  fi
+}
+
 if [ "$OS" = "Darwin" ]; then
+  # Prefer an already-present brew (IT image / prior install) before the
+  # official installer — CyberArk EPM on work Macs often blocks sudo/admin.
+  if ! command -v brew &>/dev/null; then
+    if [ -x /opt/homebrew/bin/brew ]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
+  fi
   if ! command -v brew &>/dev/null; then
     echo "bootstrap: installing Homebrew for $(uname -m)..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if ! NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+      echo "bootstrap: ERROR: Homebrew install failed." >&2
+      echo "bootstrap: Work Macs without admin need IT-provided brew, or an admin to finish the installer once." >&2
+      exit 1
+    fi
   fi
-  if [ -f "/opt/homebrew/bin/brew" ]; then
+  if [ -x /opt/homebrew/bin/brew ]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [ -f "/usr/local/bin/brew" ]; then
+  elif [ -x /usr/local/bin/brew ]; then
     eval "$(/usr/local/bin/brew shellenv)"
+  fi
+  if ! command -v brew &>/dev/null; then
+    echo "bootstrap: ERROR: brew not on PATH after install (try: eval \"\$(/opt/homebrew/bin/brew shellenv)\")" >&2
+    exit 1
   fi
   brew list git &>/dev/null || brew install git
 elif [ "$OS" = "Linux" ]; then
@@ -70,19 +117,8 @@ if ! command -v mise &>/dev/null && [ ! -x "$HOME/.local/bin/mise" ]; then
 fi
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
-# Python 3.11+ (tomllib) for the package dispatcher. Linux installs a distro
-# python3 above; Apple /usr/bin/python3 is 3.9 and has no tomllib. Install via
-# mise here (never brew — docs/DECISION.md) so run_onchange_after_10 can parse
-# manifests before the full mise toolset lands in step 20.
-if ! python3 -c 'import tomllib' 2>/dev/null; then
-  echo "bootstrap: installing python via mise (dispatcher needs 3.11+/tomllib)..."
-  mise install python@latest --yes
-  hash -r || true
-  if ! python3 -c 'import tomllib' 2>/dev/null; then
-    echo "bootstrap: ERROR: python3 still lacks tomllib after mise install" >&2
-    exit 1
-  fi
-fi
+# Linux distro python3 is usually 3.11+; macOS still needs mise here.
+ensure_tomllib_python
 
 # zinit (zsh plugin manager, turbo mode).
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
