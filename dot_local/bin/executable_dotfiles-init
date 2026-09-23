@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+# Re-run chezmoi init with readline prompts: defaults are pre-filled in the
+# input (edit or press Enter), answers echo, then a decision summary.
+# Avoids chezmoi's TTY Bubble Tea UI and its bare --no-tty prompts.
+#
+# Usage:
+#   dotfiles-init              # interactive; then chezmoi init --apply -v
+#   dotfiles-init --dry-run    # prompts + summary only
+#
+# First-time machines (this binary not installed yet):
+#   sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply --no-tty -v <repo>
+#   Enter alone = default; unique prefixes work (w/p, i/s).
+set -euo pipefail
+
+usage() {
+  echo "usage: dotfiles-init [--dry-run]" >&2
+  exit 2
+}
+
+DRY_RUN=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --dry-run) DRY_RUN=1 ;;
+  -h | --help) usage ;;
+  *) usage ;;
+  esac
+  shift
+done
+
+if [ ! -t 0 ]; then
+  echo "dotfiles-init: need an interactive terminal (or use chezmoi init --no-tty)" >&2
+  exit 1
+fi
+
+if ! command -v chezmoi >/dev/null 2>&1; then
+  echo "dotfiles-init: chezmoi not found on PATH" >&2
+  exit 1
+fi
+
+say() { printf '%s\n' "$*"; }
+
+# Prefill the readline buffer with default (bash: read -e -i).
+read_prefill() {
+  local prompt="$1" default="$2" ans
+  read -e -i "$default" -r -p "$prompt" ans || exit 1
+  REPLY="$ans"
+}
+
+# read_line prompt [default] — default pre-filled when provided
+read_line() {
+  local prompt="$1" default="${2-}" ans
+  if [ -n "$default" ]; then
+    read_prefill "$prompt: " "$default"
+    REPLY="${REPLY:-$default}"
+  else
+    while true; do
+      read -e -r -p "$prompt: " ans || exit 1
+      if [ -n "$ans" ]; then
+        REPLY="$ans"
+        return 0
+      fi
+      say "  (required)"
+    done
+  fi
+}
+
+# Match full choice or unique prefix (w→work, p→personal, i→install, s→skip).
+match_choice() {
+  local ans="$1"
+  shift
+  local c matches=0 match=""
+  for c in "$@"; do
+    case "$c" in
+    "$ans" | "$ans"*)
+      matches=$((matches + 1))
+      match="$c"
+      ;;
+    esac
+  done
+  if [ "$matches" -eq 1 ]; then
+    REPLY="$match"
+    return 0
+  fi
+  return 1
+}
+
+# read_choice prompt "a|b" default — default pre-filled; prefixes OK
+read_choice() {
+  local prompt="$1" choices_csv="$2" default="$3" label
+  local -a opts
+  label="${choices_csv//|//}"
+  IFS='|' read -r -a opts <<<"$choices_csv"
+  while true; do
+    read_prefill "$prompt ($label): " "$default"
+    REPLY="${REPLY:-$default}"
+    if match_choice "$REPLY" "${opts[@]}"; then
+      return 0
+    fi
+    say "  enter one of: ${label//\//, } (or a unique prefix like w / p)"
+  done
+}
+
+json_str() {
+  # Best-effort extract "key": "value" from chezmoi data JSON (no jq required).
+  local key="$1"
+  chezmoi data --format json 2>/dev/null |
+    sed -n "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p" |
+    head -1 || true
+}
+
+json_bool() {
+  local key="$1"
+  chezmoi data --format json 2>/dev/null |
+    sed -n "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\\(true\\|false\\).*/\\1/p" |
+    head -1 || true
+}
+
+name_default="$(json_str name)"
+email_default="$(json_str email)"
+if [ -z "$name_default" ]; then
+  name_default="$(git config --global user.name 2>/dev/null || true)"
+fi
+if [ -z "$email_default" ]; then
+  email_default="$(git config --global user.email 2>/dev/null || true)"
+fi
+
+if [ "$(uname -s)" = "Darwin" ]; then
+  profile_default="work"
+else
+  profile_default="personal"
+fi
+case "$(json_bool is_work)" in
+true) profile_default="work" ;;
+false) profile_default="personal" ;;
+esac
+
+say "== dotfiles-init =="
+say "Default is already typed — edit it or press Enter to keep it."
+say "Prefixes work too (w/work, p/personal, i/install, s/skip)."
+say ""
+
+read_line "Git name" "$name_default"
+name="$REPLY"
+say "  -> $name"
+
+read_line "Git email" "$email_default"
+email="$REPLY"
+say "  -> $email"
+
+read_choice "Machine profile" "work|personal" "$profile_default"
+profile="$REPLY"
+say "  -> $profile"
+
+# IntelliJ default follows the profile just chosen.
+if [ "$profile" = "work" ]; then
+  ij_default="install"
+else
+  ij_default="skip"
+fi
+
+read_choice "IntelliJ IDEA keymap" "install|skip" "$ij_default"
+ij="$REPLY"
+say "  -> $ij"
+
+is_work=false
+install_intellij=false
+[ "$profile" = "work" ] && is_work=true
+[ "$ij" = "install" ] && install_intellij=true
+
+say ""
+say "== summary =="
+say "  Git name:           $name"
+say "  Git email:          $email"
+say "  Machine profile:    $profile   (is_work=$is_work)"
+say "  IntelliJ keymap:    $ij   (install_intellij=$install_intellij)"
+say ""
+
+proceed="Y"
+read -e -i "Y" -r -p "Proceed with chezmoi init --apply -v? [Y/n] " proceed || exit 1
+case "${proceed:-Y}" in
+n | N | no | NO)
+  say "Aborted."
+  exit 0
+  ;;
+esac
+
+if [ "$DRY_RUN" -eq 1 ]; then
+  say "(dry-run) would run: chezmoi init --apply -v --no-tty --promptString ... --promptChoice ..."
+  exit 0
+fi
+
+say ""
+say "== applying (only changes are printed; silence means already up to date) =="
+chezmoi init --apply -v --no-tty \
+  --promptString "Git name=$name" \
+  --promptString "Git email=$email" \
+  --promptChoice "Machine profile=$profile" \
+  --promptChoice "IntelliJ IDEA keymap=$ij"
+
+say ""
+say "== done =="
+say "Init only rewrites ~/.config/chezmoi/chezmoi.toml and runs apply."
+say "Package / mise / keymap scripts run again ONLY when their sources change"
+say "(they are run_onchange_*). A quiet apply means this machine is already"
+say "converged — that is success, not a hang."
+say ""
+say "Next:"
+say "  dotfiles-doctor          # verify profile + health"
+say "  chezmoi data             # show is_work / install_intellij"
+say "  chezmoi status           # any remaining drift"

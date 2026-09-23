@@ -15,17 +15,24 @@ class ChezmoiConfigTest(unittest.TestCase):
     def test_prompts_for_name_email(self) -> None:
         text = read(".chezmoi.toml.tmpl")
         self.assertIn("promptString", text)
-        self.assertIn("name", text)
-        self.assertIn("email", text)
+        self.assertIn("Git name", text)
+        self.assertIn("Git email", text)
 
-    def test_is_work_defaults_to_darwin(self) -> None:
+    def test_profile_uses_prompt_choice_not_bool(self) -> None:
         text = read(".chezmoi.toml.tmpl")
+        self.assertIn("promptChoice", text)
+        self.assertNotRegex(text, r"\bpromptBool\b")
+        self.assertIn('"work"', text)
+        self.assertIn('"personal"', text)
         self.assertIn("is_work", text)
         self.assertIn('eq .chezmoi.os "darwin"', text)
 
-    def test_install_intellij_flag_exists(self) -> None:
+    def test_intellij_uses_install_skip_choice(self) -> None:
         text = read(".chezmoi.toml.tmpl")
         self.assertIn("install_intellij", text)
+        self.assertIn('"install"', text)
+        self.assertIn('"skip"', text)
+        self.assertIn("IntelliJ IDEA keymap", text)
 
 
 class ChezmoiIgnoreTest(unittest.TestCase):

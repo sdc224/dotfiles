@@ -1,9 +1,20 @@
+{{- /* Prefer: chezmoi init --no-tty  (or: dotfiles-init).
+     Raw TTY Bubble Tea prompts hide keystrokes in some terminals (e.g. Ghostty)
+     and auto-submit on unique abbreviations (w→work) without Enter. */ -}}
+{{- $profileDefault := "personal" -}}
+{{- if eq .chezmoi.os "darwin" -}}{{- $profileDefault = "work" -}}{{- end -}}
+{{- $name := promptString "Git name" -}}
+{{- $email := promptString "Git email" -}}
+{{- $profile := promptChoice "Machine profile" (list "work" "personal") $profileDefault -}}
+{{- $ijDefault := "skip" -}}
+{{- if eq $profile "work" -}}{{- $ijDefault = "install" -}}{{- end -}}
+{{- $ij := promptChoice "IntelliJ IDEA keymap" (list "install" "skip") $ijDefault -}}
 [data]
-    name = {{ promptString "Git name" | quote }}
-    email = {{ promptString "Git email" | quote }}
+    name = {{ $name | quote }}
+    email = {{ $email | quote }}
     # Work Mac today, personal Fedora. Default follows the OS so re-provisioning
-    # is one Enter: true on darwin, false elsewhere. Override at `chezmoi init` time.
-    is_work = {{ promptBool "Work machine" (eq .chezmoi.os "darwin") }}
-    # IntelliJ gate: true on work by default, personal trials flip this to true
-    # with `chezmoi init` (no manifest refactor needed).
-    install_intellij = {{ promptBool "Install IntelliJ IDEA" (eq .chezmoi.os "darwin") }}
+    # is one Enter: work on darwin, personal elsewhere. Override at init time.
+    is_work = {{ eq $profile "work" }}
+    # IntelliJ keymap gate: defaults to install on work, skip on personal.
+    # Personal trials flip to install at `chezmoi init` (no manifest rewrite).
+    install_intellij = {{ eq $ij "install" }}

@@ -26,6 +26,7 @@ SCRIPTS = [
     "dot_local/bin/executable_dotfiles-sync",
     "dot_local/bin/executable_dotfiles-auto-update",
     "dot_local/bin/executable_dotfiles-doctor",
+    "dot_local/bin/executable_dotfiles-init",
 ]
 
 
@@ -392,6 +393,34 @@ class DoctorScriptTest(unittest.TestCase):
         # to unknown instead of erroring (no execute-template missingkey).
         self.assertIn("unknown", self.TEXT)
         self.assertNotIn("execute-template", self.code_text())
+
+
+class InitScriptTest(unittest.TestCase):
+    TEXT = read("dot_local/bin/executable_dotfiles-init")
+
+    def test_echoes_answers_and_prints_summary(self) -> None:
+        self.assertIn("read -e -i", self.TEXT)
+        self.assertIn("== summary ==", self.TEXT)
+        self.assertIn("is_work=", self.TEXT)
+        self.assertIn("install_intellij=", self.TEXT)
+        self.assertIn("already up to date", self.TEXT)
+
+    def test_prefills_chezmoi_prompts_no_bubble_tea(self) -> None:
+        # Pre-filled flags + --no-tty: chezmoi must not open its TTY UI.
+        self.assertIn("--no-tty", self.TEXT)
+        self.assertIn('--promptString "Git name=', self.TEXT)
+        self.assertIn('--promptChoice "Machine profile=', self.TEXT)
+        self.assertIn('--promptChoice "IntelliJ IDEA keymap=', self.TEXT)
+
+    def test_requires_tty(self) -> None:
+        self.assertIn("[ ! -t 0 ]", self.TEXT)
+
+    def test_dry_run_flag(self) -> None:
+        self.assertIn("--dry-run", self.TEXT)
+
+    def test_accepts_choice_prefixes(self) -> None:
+        self.assertIn("match_choice", self.TEXT)
+        self.assertIn("unique prefix", self.TEXT)
 
 
 if __name__ == "__main__":
