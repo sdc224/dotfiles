@@ -639,6 +639,9 @@ class DoctorTest(unittest.TestCase):
         write_stub(
             bin_dir,
             "launchctl",
+            # print: success only when the job was previously bootstrapped
+            # (or pre-seeded via scheduler_loaded). list kept for older paths.
+            'if [ "$1" = "print" ]; then [ -f "$DOCTOR_STATE/scheduler" ] && exit 0; exit 1; fi\n'
             'if [ "$1" = "list" ]; then cat "$DOCTOR_STATE/scheduler" 2>/dev/null && echo com.dotfiles.update; exit 0; fi\n'
             'if [ "$1" = "bootstrap" ]; then echo loaded > "$DOCTOR_STATE/scheduler"; exit 0; fi\n'
             "exit 0",
