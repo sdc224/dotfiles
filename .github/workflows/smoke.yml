@@ -55,6 +55,9 @@ jobs:
           PROFILE: ${{ matrix.profile }}
           # Keep logs outside the chezmoi source tree.
           SMOKE_LOG_DIR: /tmp/dotfiles-smoke-logs
+          # mise talks to api.github.com for tool releases; without a token
+          # shared runner IPs burn the 60/hr anonymous cap mid-install.
+          MISE_GITHUB_TOKEN: ${{ github.token }}
         run: bash tests/smoke/run.sh
 
       - name: Upload apply log
