@@ -145,12 +145,17 @@ assert_log_clean() {
   # Hard failures only: chezmoi reporting a script exit, or our own fatal
   # markers. Do NOT match bare `error:` — flatpak/dnf soft-fail paths print
   # that while the dispatcher continues (`|| true`).
-  if grep -Eiq \
-    'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' \
-    "$logf"; then
-    grep -Ein \
-      'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' \
-      "$logf" | head -n 40 >&2 || true
+  # Skip unified-diff payload lines (+/-) so echo strings inside applied
+  # scripts cannot trip markers when chezmoi dumps the script body.
+  local hits
+  hits="$(
+    grep -Ev '^[+-]' "$logf" |
+      grep -Ei \
+        'chezmoi: .*: exit status|chezmoi: error|dispatcher:.*failed|mise-install:.*error|bootstrap: (error|FAIL)' \
+      || true
+  )"
+  if [ -n "$hits" ]; then
+    printf '%s\n' "$hits" | head -n 40 >&2
     fail "apply log contains hard failure markers (see above)"
   fi
   log "ok: apply log has no hard failure markers"

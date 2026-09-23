@@ -107,9 +107,11 @@ class DispatcherScriptTest(unittest.TestCase):
         self.assertNotIn("brew uninstall", self.TEXT)
 
     def test_fedora_copr_ghostty(self) -> None:
-        # Official Ghostty docs point at scottames/ghostty (F44+ builds).
+        # Official Ghostty docs: scottames/ghostty. Repo file drop avoids
+        # needing dnf5-command(copr) in minimal/container images.
         self.assertIn("scottames/ghostty", self.TEXT)
-        self.assertIn("dnf copr enable -y scottames/ghostty", self.TEXT)
+        self.assertIn("scottames-ghostty-fedora-", self.TEXT)
+        self.assertIn("dnf install -y ghostty", self.TEXT)
 
     def test_flatpak_flathub_ensured(self) -> None:
         self.assertIn("flathub", self.TEXT)
