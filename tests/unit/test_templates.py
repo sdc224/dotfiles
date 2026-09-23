@@ -103,6 +103,12 @@ class ZshrcTemplateTest(unittest.TestCase):
         text = read("dot_zshrc.tmpl")
         self.assertIn("dump_zsh_state", text)
 
+    def test_brew_shellenv_for_non_login_shells(self) -> None:
+        # IDE terminals often skip ~/.zprofile; brew must still land on PATH.
+        text = read("dot_zshrc.tmpl")
+        self.assertIn("brew shellenv", text)
+        self.assertIn("/opt/homebrew/bin/brew", text)
+
 
 class IdeKeysTemplateTest(unittest.TestCase):
     def test_intellij_gated_on_work_or_flag(self) -> None:

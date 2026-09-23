@@ -4,11 +4,18 @@
 # (hashes above alter script content, triggering chezmoi run_onchange).
 # Profile rendered at apply time: is_work={{ .is_work }}, os={{ .chezmoi.os }}, arch={{ .chezmoi.arch }}.
 set -euo pipefail
-# Chezmoi scripts inherit a minimal PATH; mise shims / ~/.local/bin are not
-# guaranteed. Bootstrap installs python via mise on macOS for tomllib (3.11+).
-# `mise install` alone does not activate shims without a config entry — prepend
-# the install bin from `mise where` when Apple/system python3 is too old.
+# Chezmoi scripts inherit a minimal PATH; mise shims / ~/.local/bin / brew are
+# not guaranteed. Login shells get brew via ~/.zprofile, but apply hooks never
+# source that file — eval shellenv only when brew is missing so we do not
+# shadow a caller-provided brew (integration stubs, already-activated shells).
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+if [ "$(uname -s)" = "Darwin" ] && ! command -v brew &>/dev/null; then
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+fi
 
 SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/packages"
 if [ ! -d "$SRC_DIR" ]; then
