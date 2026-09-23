@@ -111,7 +111,11 @@ class DispatcherScriptTest(unittest.TestCase):
         # needing dnf5-command(copr) in minimal/container images.
         self.assertIn("scottames/ghostty", self.TEXT)
         self.assertIn("scottames-ghostty-fedora-", self.TEXT)
-        self.assertIn("dnf install -y ghostty", self.TEXT)
+        self.assertIn("dnf install -y", self.TEXT)
+        self.assertIn("ghostty", self.TEXT)
+        # CI: codecs.fedoraproject.org openh264 mirrors are flaky.
+        self.assertIn("fedora-cisco-openh264", self.TEXT)
+        self.assertIn("install_weak_deps=False", self.TEXT)
 
     def test_flatpak_flathub_ensured(self) -> None:
         self.assertIn("flathub", self.TEXT)
@@ -217,6 +221,8 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         for pkg in ("python3", "flatpak", "fontconfig", "diffutils", "unzip"):
             self.assertIn(pkg, text, f"bootstrap missing {pkg}")
         self.assertNotIn("2>/dev/null || true", text)
+        # codecs.fedoraproject.org openh264 mirrors flake in CI.
+        self.assertIn("fedora-cisco-openh264", text)
 
     def test_bootstrap_installs_nerd_fonts_linux(self) -> None:
         text = read("run_once_before_00-bootstrap.sh.tmpl")
