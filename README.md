@@ -354,6 +354,7 @@ Checks profile, chezmoi install/source/drift, mise, package backends, scheduler 
 | `permission denied` on `chezmoi.toml` | Leftover unreadable `~/.config/chezmoi` (ownership/ACL). `ls -la ~/.config/chezmoi`, fix ownership or move it aside, then re-init. |
 | Bootstrap: `python3 still lacks tomllib` | Fixed by putting `mise where python@latest`/bin on PATH after install. Pull latest + `chezmoi apply -v`. |
 | Homebrew: no Admin rights (work Mac) | CyberArk EPM. Prefer IT-provided `/opt/homebrew`, or ask an admin to finish the installer once. |
+| `brew` not found after install | Dotfiles own PATH: `~/.zprofile` + `~/.zshrc` eval `brew shellenv`; apply hooks do too. Open a new shell or `eval "$(/opt/homebrew/bin/brew shellenv)"` then `chezmoi apply -v`. |
 | Installer polluted `~/.zshrc` | Move the snippet to `~/.zsh_local`, then `chezmoi apply` to restore the managed file. |
 
 ### Useful inspection commands

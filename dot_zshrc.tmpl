@@ -5,6 +5,15 @@
 # PATH & Environment
 export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:$PATH"
 export PATH="$PATH":"$HOME/.pub-cache/bin"
+# Homebrew: login shells get this from ~/.zprofile. Many IDE terminals are
+# non-login and only source ~/.zshrc — wire brew here too (skip if already on PATH).
+if ! command -v brew &>/dev/null; then
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -x /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+fi
 export EDITOR='code --wait'
 export VISUAL='code'
 export SHELL='/bin/zsh'

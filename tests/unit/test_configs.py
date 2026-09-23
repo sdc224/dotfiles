@@ -114,6 +114,7 @@ class ZprofileTest(unittest.TestCase):
     def test_brew_shellenv_wired(self) -> None:
         text = read("dot_zprofile")
         self.assertIn("brew shellenv", text)
+        self.assertIn("/opt/homebrew/bin/brew", text)
 
     def test_dotfiles_bin_is_on_login_path(self) -> None:
         text = read("dot_zprofile")
