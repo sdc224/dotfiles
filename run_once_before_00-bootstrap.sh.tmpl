@@ -28,7 +28,7 @@ elif [ "$OS" = "Linux" ]; then
     # gcc/libatomic: mise cargo:* compile + Node libatomic.so.1
     # tar/gzip/unzip/fontconfig/findutils/which/diffutils: fonts, scripts, ide-keys
     # gh: early GitHub CLI until mise install provides the managed one
-    sudo dnf install -y \
+    sudo dnf install -y --disablerepo=fedora-cisco-openh264 \
       git curl zsh flatpak gh \
       python3 \
       gcc libatomic \

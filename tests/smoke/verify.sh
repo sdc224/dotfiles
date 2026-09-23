@@ -54,12 +54,12 @@ verify_personal() {
   assert_version "docker CLI" docker --version
 
   # Ghostty via scottames/ghostty COPR repo drop (dispatcher; require binary)
-  assert_ok "ghostty on PATH" command -v ghostty
+  assert_ok "ghostty on PATH" bash -c 'command -v ghostty >/dev/null'
 
-  # Flatpak Postman (install may be heavy; require app ref listed)
+  # Flatpak Postman — use `info` (not list|grep): with pipefail, grep -q closes
+  # the pipe early → SIGPIPE 141 and a silent smoke death.
   if command -v flatpak &>/dev/null; then
-    assert_ok "flatpak Postman installed" \
-      flatpak list --app --columns=application | grep -qx 'com.getpostman.Postman'
+    assert_ok "flatpak Postman installed" flatpak info com.getpostman.Postman
   else
     fail "flatpak missing after personal apply"
   fi
@@ -103,7 +103,7 @@ verify_work() {
   assert_ok "work DXS rule active" grep -q 'DXS' "$HOME/.gemini/GEMINI.md"
 
   # Keymap copies into an existing JetBrains product dir (pre-seeded in run.sh).
-  if ! find "$HOME/.config/JetBrains" -name 'DarculaCopy.xml' 2>/dev/null | grep -q .; then
+  if ! find "$HOME/.config/JetBrains" -name 'DarculaCopy.xml' -print -quit 2>/dev/null | grep -q .; then
     fail "IntelliJ DarculaCopy.xml not deployed on work profile"
   fi
   log "ok: IntelliJ keymap deployed"
