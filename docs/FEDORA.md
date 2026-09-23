@@ -7,8 +7,9 @@ to finalize in `dot_config/packages/personal.toml` ([dnf] / [flatpak]).
   apply; dispatcher then installs dnf + flatpak + mise tools).
 - Ghostty: dispatcher drops the `scottames/ghostty` COPR `.repo` file
   (the COPR Ghostty documents; works without `dnf copr` in containers) and
-  installs the package when missing. Same `dot_config/ghostty/config` as
-  macOS, including Ctrl-C copy-or-interrupt and Shift+Insert paste parity.
+  installs the package when missing, skipping the flaky
+  `fedora-cisco-openh264` repo. Same `dot_config/ghostty/config` as macOS,
+  including Ctrl-C copy-or-interrupt and Shift+Insert paste parity.
 - Auto-update: `systemd --user enable --now dotfiles-update.timer`
   (also enabled once by `run_once_after_40-enable-schedulers`). GNOME Software
   owns unattended DNF upgrades, including Docker Engine from Docker's official
