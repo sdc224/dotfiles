@@ -78,16 +78,24 @@ class WorkProfileTest(unittest.TestCase):
         self.assertIn("awscli", brew)
         self.assertIn("mysql", brew)
 
-    def test_work_has_intellij_toolbox_postman(self) -> None:
+    def test_work_has_toolbox_postman_not_intellij_cask(self) -> None:
+        # IntelliJ comes from JetBrains Toolbox, not the intellij-idea cask.
         casks = repo.manifest_entries(WORK)["cask"]
-        self.assertIn("intellij-idea", casks)
         self.assertIn("jetbrains-toolbox", casks)
         self.assertIn("postman", casks)
+        self.assertNotIn("intellij-idea", casks)
+
+    def test_shared_has_no_windsurf_or_devin(self) -> None:
+        # Windsurf rebranded to devin-desktop; we install neither.
+        casks = repo.manifest_entries(SHARED)["cask"]
+        self.assertNotIn("windsurf", casks)
+        self.assertNotIn("devin-desktop", casks)
 
     def test_personal_has_no_intellij(self) -> None:
         entries = repo.manifest_entries(PERSONAL)
         for backend, names in entries.items():
             self.assertNotIn("intellij-idea", names, backend)
+            self.assertNotIn("jetbrains-toolbox", names, backend)
 
     def test_personal_has_no_mysql(self) -> None:
         entries = repo.manifest_entries(PERSONAL)
@@ -130,13 +138,16 @@ class DispatcherMergeTest(unittest.TestCase):
         plan = repo.merged_plan(SHARED, WORK)
         self.assertIn("brew:git", plan)
         self.assertIn("brew:awscli", plan)
-        self.assertIn("cask:intellij-idea", plan)
+        self.assertIn("cask:jetbrains-toolbox", plan)
+        self.assertNotIn("cask:intellij-idea", plan)
+        self.assertNotIn("cask:windsurf", plan)
 
     def test_personal_plan_contains_shared_plus_personal(self) -> None:
         plan = repo.merged_plan(SHARED, PERSONAL)
         self.assertIn("brew:git", plan)
         self.assertIn("dnf:neovim", plan)
         self.assertNotIn("cask:intellij-idea", plan)
+        self.assertNotIn("cask:jetbrains-toolbox", plan)
 
     def test_plan_dedupes_shared_first(self) -> None:
         plan = repo.merged_plan(SHARED, WORK)

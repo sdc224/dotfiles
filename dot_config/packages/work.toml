@@ -1,6 +1,7 @@
 # Work profile: merged on top of shared.toml when `is_work` is true.
-# Current work machine is the M4 Max Mac. IntelliJ lives HERE ONLY for now.
-# Personal Fedora must not install these unless `install_intellij` is flipped.
+# Current work machine is the M4 Max Mac. IntelliJ is installed via
+# JetBrains Toolbox (not the intellij-idea cask). Personal Fedora must not
+# install these unless the profile is flipped.
 
 [brew]
 formulae = [
@@ -12,8 +13,7 @@ formulae = [
 
 [cask]
 casks = [
-  "intellij-idea",     # WORK ONLY (see also install_intellij flag in .chezmoi.toml.tmpl)
-  "jetbrains-toolbox", # owns future IDE updates alongside brew
+  "jetbrains-toolbox", # install IntelliJ (and other JetBrains IDEs) from Toolbox
   "postman",
   # slack, zoom, rancher-desktop are MDM-provided via Intelligent Hub
   # (see docs/MDM.md). Never declare them here.

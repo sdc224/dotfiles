@@ -26,7 +26,7 @@ these installs.
 
 | Case | macOS | Fedora | Status |
 |---|---|---|---|
-| work profile installs awscli/mysql/intellij-idea | ✅ | n/a | auto |
+| work profile installs awscli/mysql/jetbrains-toolbox (not intellij-idea cask) | ✅ | n/a | auto |
 | personal profile installs neovim/distrobox, no work pkgs | ✅/n/a | ✅ | auto + ci-only |
 | shared casks land on mac (ghostty/vscode/cursor) | ✅ | n/a | auto |
 | existing unmanaged app/font skips the cask download | ✅ | n/a | unit + manual |
@@ -118,7 +118,7 @@ scope. Both workflows run Thursday 06:00 UTC (day after Wed brew/mise audit).
 | Flatpak Postman | ✅ Fedora | n/a | smoke |
 | Ghostty (COPR) on PATH | ✅ Fedora | shared-only | smoke |
 | Shared brew formulae + casks (Ghostty, Cursor, fonts, …) | ✅ macOS | ✅ macOS | smoke |
-| Work brew/cask (`awscli`, `mysql`, IntelliJ, Toolbox, Postman) | absent macOS | ✅ macOS | smoke |
+| Work brew/cask (`awscli`, `mysql`, Toolbox, Postman; not intellij-idea/windsurf) | absent macOS | ✅ macOS | smoke |
 | `kubectl` via mise | absent | ✅ | smoke |
 | Work DXS rule / personal rule (GEMINI on Linux; Cursor/Claude on macOS) | ✅ | ✅ | smoke |
 | IntelliJ keymap deploy (pre-seeded JetBrains dir) | absent | ✅ | smoke |
