@@ -130,8 +130,11 @@ class DispatcherScriptTest(unittest.TestCase):
     def test_darwin_evals_brew_shellenv(self) -> None:
         # Apply hooks never source ~/.zprofile; without this, first-contact
         # apply skips all brew/cask installs after bootstrap installs brew.
+        # Only when brew is missing — never shadow PATH stubs (CI) or an
+        # already-activated shell (same lesson as auto-update).
         self.assertIn("brew shellenv", self.TEXT)
         self.assertIn("/opt/homebrew/bin/brew", self.TEXT)
+        self.assertIn('! command -v brew', self.TEXT)
 
     def test_skips_existing_unmanaged_cask_payloads(self) -> None:
         self.assertIn("cask_payload_exists", self.TEXT)

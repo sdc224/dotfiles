@@ -6,9 +6,10 @@
 set -euo pipefail
 # Chezmoi scripts inherit a minimal PATH; mise shims / ~/.local/bin / brew are
 # not guaranteed. Login shells get brew via ~/.zprofile, but apply hooks never
-# source that file — eval shellenv here so first-contact converge finds brew.
+# source that file — eval shellenv only when brew is missing so we do not
+# shadow a caller-provided brew (integration stubs, already-activated shells).
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
-if [ "$(uname -s)" = "Darwin" ]; then
+if [ "$(uname -s)" = "Darwin" ] && ! command -v brew &>/dev/null; then
   if [ -x /opt/homebrew/bin/brew ]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
   elif [ -x /usr/local/bin/brew ]; then
