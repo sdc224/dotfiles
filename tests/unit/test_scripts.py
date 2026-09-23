@@ -119,6 +119,12 @@ class DispatcherScriptTest(unittest.TestCase):
         # grep finds nothing -> exit 1 -> pipefail would kill the script.
         self.assertIn("done || true", self.TEXT)
 
+    def test_requires_tomllib_and_prefers_mise_shims(self) -> None:
+        # Regression: macOS apply used Apple python3.9 → No module named tomllib.
+        self.assertIn("mise/shims", self.TEXT)
+        self.assertIn("import tomllib", self.TEXT)
+        self.assertIn("mise install python@latest", self.TEXT)
+
     def test_skips_existing_unmanaged_cask_payloads(self) -> None:
         self.assertIn("cask_payload_exists", self.TEXT)
         self.assertIn("/Applications/Cursor.app", self.TEXT)
@@ -245,6 +251,14 @@ class BootstrapSchedulerScriptTest(unittest.TestCase):
         self.assertNotIn("2>/dev/null || true", text)
         # codecs.fedoraproject.org openh264 mirrors flake in CI.
         self.assertIn("fedora-cisco-openh264", text)
+
+    def test_bootstrap_ensures_tomllib_python_via_mise(self) -> None:
+        # macOS ships /usr/bin/python3 3.9 (no tomllib). Dispatcher needs 3.11+.
+        # Never brew python — docs/DECISION.md; mise owns the runtime.
+        text = read("run_once_before_00-bootstrap.sh.tmpl")
+        self.assertIn("import tomllib", text)
+        self.assertIn("mise install python@latest", text)
+        self.assertIn("mise/shims", text)
 
     def test_bootstrap_installs_nerd_fonts_linux(self) -> None:
         text = read("run_once_before_00-bootstrap.sh.tmpl")

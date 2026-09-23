@@ -4,6 +4,9 @@
 # (hashes above alter script content, triggering chezmoi run_onchange).
 # Profile rendered at apply time: is_work={{ .is_work }}, os={{ .chezmoi.os }}, arch={{ .chezmoi.arch }}.
 set -euo pipefail
+# Chezmoi scripts inherit a minimal PATH; mise shims / ~/.local/bin are not
+# guaranteed. Bootstrap installs python via mise on macOS for tomllib (3.11+).
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
 SRC_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_config/packages"
 if [ ! -d "$SRC_DIR" ]; then
@@ -21,6 +24,18 @@ OVERLAY="$SRC_DIR/personal.toml"
 if ! command -v python3 &>/dev/null; then
   echo "dispatcher: python3 required to parse manifests, skipping" >&2
   exit 0
+fi
+# Apple /usr/bin/python3 is 3.9 (no tomllib). Prefer mise python; install if needed.
+if ! python3 -c 'import tomllib' 2>/dev/null; then
+  if command -v mise &>/dev/null; then
+    echo "dispatcher: python3 lacks tomllib; installing via mise..." >&2
+    mise install python@latest --yes
+    hash -r || true
+  fi
+fi
+if ! python3 -c 'import tomllib' 2>/dev/null; then
+  echo "dispatcher: ERROR: Python 3.11+ (tomllib) required to parse manifests" >&2
+  exit 1
 fi
 
 # Emit "backend:name" lines for shared+overlay, parsed by shell below.
