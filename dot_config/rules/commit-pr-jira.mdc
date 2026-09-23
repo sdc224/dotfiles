@@ -5,9 +5,21 @@ alwaysApply: true
 
 # Commit, PR, and Jira
 
-Apply these whenever creating commits, pull requests, or Jira issues unless the user overrides them.
+## Scope (read first)
 
-## Commits
+This rule applies **only** to Intuit / work repositories.
+
+If the current workspace is a **personal** project, **ignore this entire rule**. Use conventional commits with an emoji and **no Jira key**. Personal signals include:
+
+- Paths under `Programming/Personal/` (or similar personal trees)
+- Personal GitHub remotes / accounts (e.g. `github.com/sdc224/...`)
+- Non-Intuit remotes and personal dotfiles
+
+Do not append `DXS-*` (or any Intuit Jira key) to personal commits or PR titles.
+
+## Commits (Intuit / work repos only)
+
+Apply these whenever creating commits, pull requests, or Jira issues in work repos unless the user overrides them.
 
 - Conventional Commits: `type(scope): subject`
 - Include an emoji in the **title** after the colon
@@ -25,13 +37,13 @@ feat(release): ✨ add per-package release - DXS-19505
 
 Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`.
 
-## Pull requests
+## Pull requests (Intuit / work repos only)
 
 - PR **title must match the commit title**, including the emoji and Jira key
 - Do not drop the emoji when creating or editing the PR
 - Body: short Summary + Test plan; include the Jira URL
 
-## Jira
+## Jira (Intuit / work repos only)
 
 - Default project: **DXS** (Data Extraction Services)
 - Default type for this kind of work: **Story**
