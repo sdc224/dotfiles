@@ -15,3 +15,12 @@ fi
 if [[ -d "/Applications/JetBrains Toolbox.app" ]] || [[ -d "$HOME/.local/share/JetBrains/Toolbox" ]]; then
   export PATH="$PATH:/usr/local/bin"
 fi
+
+
+# Added by Toolbox App
+export PATH="$PATH:/Users/schatterjee10/Library/Application Support/JetBrains/Toolbox/scripts"
+
+
+# mise shims ahead of system/Homebrew paths for login shells that never source
+# ~/.zshrc (IDE/agent/tool shells). /etc/zprofile path_helper runs before this.
+export PATH="$HOME/.local/share/mise/shims:$PATH"
